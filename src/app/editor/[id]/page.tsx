@@ -261,7 +261,8 @@ export default function EditorPage() {
         if (!error && !auto) {
             toast.success('Cambios guardados correctamente');
         } else if (error) {
-            toast.error('Error al guardar cambios');
+            console.error('Save error:', error);
+            toast.error(`Error: ${error.message || 'No se pudo guardar. Verifica tu conexión.'}`);
         }
 
         setIsSaving(false);
@@ -555,26 +556,31 @@ export default function EditorPage() {
                 </div>
 
                 {/* ── RIGHT PANEL: PREVIEW ────────────────────────────────────────── */}
-                <div className={`${mobileTab === 'preview' ? 'flex' : 'hidden'} md:flex flex-1 flex-col items-center justify-start py-8 px-4 overflow-y-auto bg-[#f5f0f5]`}>
-                    <div className="flex items-center justify-between w-full max-w-sm mb-8 bg-white/50 p-1.5 rounded-full border border-white">
-                        <div className="flex gap-1">
+                <div className={`${mobileTab === 'preview' ? 'flex' : 'hidden'} md:flex flex-1 flex-col items-center justify-start py-4 md:py-8 px-4 overflow-y-auto bg-[#f5f0f5]`}>
+                    {/* Desktop: show toggle + Vista publica. Mobile: only Vista publica */}
+                    <div className="flex items-center justify-between w-full max-w-sm mb-4 md:mb-8 bg-white/50 p-1.5 rounded-full border border-white">
+                        <div className="hidden md:flex gap-1">
                             {(['mobile', 'desktop'] as const).map((m) => (
                                 <button key={m} onClick={() => setPreviewMode(m)} className={`p-2 rounded-full transition-all ${previewMode === m ? 'bg-white shadow-sm text-[#a35d6a]' : 'text-gray-400'}`}>
                                     {m === 'mobile' ? <Smartphone size={16} /> : <Monitor size={16} />}
                                 </button>
                             ))}
                         </div>
-                        <Link href={`/invite/${eventData.slug}`} target="_blank" className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold text-[#a35d6a] hover:bg-white transition-all"><ExternalLink size={12} /> Vista pública</Link>
+                        <Link href={`/invite/${eventData.slug}`} target="_blank" className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold text-[#a35d6a] hover:bg-white transition-all mx-auto md:mx-0"><ExternalLink size={12} /> Vista pública</Link>
                     </div>
 
-                    <div className={`transition-all duration-500 ${previewMode === 'mobile' ? 'w-[280px] aspect-[9/19.5]' : 'w-full max-w-sm aspect-[9/16]'}`}>
+                    <div className={`transition-all duration-500 w-full md:w-auto ${previewMode === 'mobile' || mobileTab === 'preview'
+                            ? 'max-w-[320px] md:max-w-[280px] aspect-[9/19.5]'
+                            : 'max-w-sm aspect-[9/16]'
+                        }`}>
                         <div className="relative bg-[#1a1a2e] rounded-[44px] shadow-[0_40px_100px_rgba(0,0,0,0.3)] border border-white/10 overflow-hidden w-full h-full">
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-[#1a1a2e] z-30 rounded-b-3xl" />
                             <div className="w-full h-full rounded-[37px] overflow-hidden"><InvitationPreview data={eventData} /></div>
                         </div>
                     </div>
 
-                    <div className="mt-8 flex flex-col items-center gap-2">
+                    {/* Only show URL hint on desktop */}
+                    <div className="hidden md:flex mt-8 flex-col items-center gap-2">
                         <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest"><Info size={12} /> Vista móvil optimizada</div>
                         <p className="text-[10px] text-gray-400 font-medium">giovis.app/invite/{eventData.slug}</p>
                     </div>
