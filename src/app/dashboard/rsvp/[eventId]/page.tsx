@@ -270,15 +270,48 @@ export default function RSVPDashboard() {
             {/* ── MAIN ─────────────────────────────────────────────────────────── */}
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
 
-                {/* Top bar */}
-                <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 md:gap-3" style={{ borderColor: '#f0dde3' }}>
-                    <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-[#7a5060] hover:text-[#a35d6a] transition-colors flex-shrink-0">
-                        <ArrowLeft size={14} /> Dashboard
-                    </Link>
-                    <span className="text-[#e8d0d7]">/</span>
-                    <span className="text-sm text-[#7a5060] truncate max-w-[120px] md:max-w-xs">{event?.title}</span>
-                    <span className="text-[#e8d0d7] hidden sm:inline">/</span>
-                    <h1 className="text-sm font-bold text-[#2d1b2d] hidden sm:block">Lista de Invitados</h1>
+                {/* ── HERO BANNER ──────────────────────────────────────────────── */}
+                <div
+                    className="relative overflow-hidden px-5 md:px-8 pt-6 pb-8"
+                    style={{ background: 'linear-gradient(135deg, #2d1b2d 0%, #7B2D8B 50%, #a35d6a 100%)' }}
+                >
+                    {/* Decorative circles */}
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10 bg-white" />
+                    <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 bg-white" />
+                    <div className="absolute top-4 right-24 w-16 h-16 rounded-full opacity-5 bg-white" />
+
+                    <div className="relative flex items-center justify-between gap-4">
+                        <div className="flex flex-col gap-1 min-w-0">
+                            <p className="text-white/60 text-xs font-medium uppercase tracking-widest truncate">
+                                {event?.title || 'Evento'}
+                            </p>
+                            <h1
+                                className="text-2xl md:text-3xl font-black text-white"
+                                style={{ fontFamily: "'Playfair Display', serif" }}
+                            >
+                                Lista de Invitados
+                            </h1>
+                            <p className="text-white/70 text-sm mt-1 hidden sm:block">
+                                Gestiona la asistencia y detalles de tus invitados
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                                onClick={exportCSV}
+                                className="hidden md:flex items-center gap-2 text-[#7B2D8B] bg-white px-5 py-3 rounded-full font-black text-sm transition-all hover:scale-105 shadow-xl"
+                            >
+                                <Download size={16} />
+                                Exportar
+                            </button>
+                            <Link
+                                href="/dashboard"
+                                className="flex items-center justify-center w-10 md:w-auto md:px-5 md:h-12 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-sm border border-white/20 shadow-lg"
+                            >
+                                <ArrowLeft size={16} />
+                                <span className="hidden md:inline ml-2 font-bold text-sm">Volver</span>
+                            </Link>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="px-4 md:px-8 py-5 md:py-8 flex flex-col gap-6">
