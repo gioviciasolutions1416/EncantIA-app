@@ -184,6 +184,7 @@ export default function EditorPage() {
     const [isGeneratingTheme, setIsGeneratingTheme] = useState(false);
     const [generatedTheme, setGeneratedTheme] = useState<Theme | null>(null);
     const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('mobile');
+    const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
     const [hasChanges, setHasChanges] = useState(false);
     const [themePrompt, setThemePrompt] = useState('');
     const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved'>('saved');
@@ -390,9 +391,27 @@ export default function EditorPage() {
                 </div>
             </div>
 
+            {/* Mobile Tab Switcher */}
+            <div className="flex md:hidden border-b bg-white" style={{ borderColor }}>
+                <button
+                    onClick={() => setMobileTab('edit')}
+                    className={`flex-1 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${mobileTab === 'edit' ? 'text-[#a35d6a] border-b-2 border-[#a35d6a]' : 'text-gray-400'
+                        }`}
+                >
+                    <Palette size={14} /> Editar
+                </button>
+                <button
+                    onClick={() => setMobileTab('preview')}
+                    className={`flex-1 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${mobileTab === 'preview' ? 'text-[#a35d6a] border-b-2 border-[#a35d6a]' : 'text-gray-400'
+                        }`}
+                >
+                    <Smartphone size={14} /> Vista previa
+                </button>
+            </div>
+
             <div className="flex flex-1 overflow-hidden">
                 {/* ── LEFT PANEL ─────────────────────────────────────────────────── */}
-                <div className="w-[40%] min-w-[340px] flex flex-col border-r overflow-y-auto bg-white" style={{ borderColor }}>
+                <div className={`${mobileTab === 'edit' ? 'flex' : 'hidden'} md:flex w-full md:w-[40%] md:min-w-[340px] flex-col border-r overflow-y-auto bg-white`} style={{ borderColor }}>
 
                     {/* INFO SECTION */}
                     <div className="border-b" style={{ borderColor }}>
@@ -536,7 +555,7 @@ export default function EditorPage() {
                 </div>
 
                 {/* ── RIGHT PANEL: PREVIEW ────────────────────────────────────────── */}
-                <div className="flex-1 flex flex-col items-center justify-start py-8 px-4 overflow-y-auto bg-[#f5f0f5]">
+                <div className={`${mobileTab === 'preview' ? 'flex' : 'hidden'} md:flex flex-1 flex-col items-center justify-start py-8 px-4 overflow-y-auto bg-[#f5f0f5]`}>
                     <div className="flex items-center justify-between w-full max-w-sm mb-8 bg-white/50 p-1.5 rounded-full border border-white">
                         <div className="flex gap-1">
                             {(['mobile', 'desktop'] as const).map((m) => (
