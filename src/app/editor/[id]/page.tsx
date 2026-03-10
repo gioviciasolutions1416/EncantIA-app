@@ -368,26 +368,46 @@ export default function EditorPage() {
     return (
         <div className="min-h-screen flex flex-col bg-[#fdfafc]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             {/* ── TOP BAR ──────────────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-5 py-3 bg-white border-b z-20 gap-4" style={{ borderColor }}>
-                <div className="flex items-center gap-3 min-w-0">
-                    <Link href="/dashboard" className="flex items-center gap-1.5 text-xs text-[#7a5060] hover:text-[#a35d6a] transition-colors flex-shrink-0"><ArrowLeft size={14} /> Dashboard</Link>
-                    <span className="text-[#e8d0d7]">/</span>
+            <div className="flex items-center justify-between px-4 py-3 bg-white border-b z-20 gap-2" style={{ borderColor }}>
+                {/* Left: back + title */}
+                <div className="flex items-center gap-2 min-w-0">
+                    <Link href="/dashboard" className="flex items-center gap-1 text-xs text-[#7a5060] hover:text-[#a35d6a] transition-colors flex-shrink-0">
+                        <ArrowLeft size={15} />
+                        <span className="hidden sm:inline">Dashboard</span>
+                    </Link>
+                    <span className="text-[#e8d0d7] hidden sm:inline">/</span>
                     {titleEditing ? (
-                        <input autoFocus value={eventData.title} onChange={(e) => update('title', e.target.value)} onBlur={() => setTitleEditing(false)} className="text-sm font-bold text-[#2d1b2d] border-b border-[#a35d6a] bg-transparent outline-none w-48" />
+                        <input autoFocus value={eventData.title} onChange={(e) => update('title', e.target.value)} onBlur={() => setTitleEditing(false)} className="text-sm font-bold text-[#2d1b2d] border-b border-[#a35d6a] bg-transparent outline-none w-32 md:w-48" />
                     ) : (
-                        <button onClick={() => setTitleEditing(true)} className="text-sm font-bold text-[#2d1b2d] hover:text-[#a35d6a] transition-colors truncate max-w-[180px] text-left">{eventData.title}</button>
+                        <button onClick={() => setTitleEditing(true)} className="text-sm font-bold text-[#2d1b2d] hover:text-[#a35d6a] transition-colors truncate max-w-[130px] md:max-w-[200px] text-left hidden sm:block">{eventData.title}</button>
                     )}
-                    <span className="text-[#e8d0d7]">/</span>
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full"><Eye size={10} /> {eventData.views || 0} visitas</div>
                 </div>
 
+                {/* Right: status + save + publish */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[11px] text-gray-400 hidden sm:block">{isSaving ? '💾 Guardando…' : saveStatus === 'unsaved' ? '● Sin guardar' : '✓ Guardado'}</span>
-                    <button onClick={() => handleSave()} disabled={isSaving || !hasChanges} className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-all disabled:opacity-40" style={{ borderColor, color: '#7a5060' }}>
-                        {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Guardar
+                    {/* Save status - desktop only */}
+                    <span className="text-[10px] text-gray-400 hidden md:block">
+                        {isSaving ? '💾 Guardando…' : saveStatus === 'unsaved' ? '● Sin guardar' : '✓ Guardado'}
+                    </span>
+                    {/* Views badge - desktop only */}
+                    <div className="hidden md:flex items-center gap-1 text-[11px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+                        <Eye size={10} /> {eventData.views || 0}
+                    </div>
+                    {/* Save button: icon-only on mobile */}
+                    <button onClick={() => handleSave()} disabled={isSaving || !hasChanges}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-all disabled:opacity-40"
+                        style={{ borderColor, color: '#7a5060' }}
+                    >
+                        {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                        <span className="hidden sm:inline">Guardar</span>
                     </button>
-                    <button onClick={handlePublish} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white transition-all hover:opacity-90" style={{ background: isPublished ? '#ef4444' : 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}>
-                        {isPublished ? <GlobeLock size={12} /> : <Globe size={12} />} {isPublished ? 'Despublicar' : 'Publicar'}
+                    {/* Publish button */}
+                    <button onClick={handlePublish}
+                        className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-full text-xs font-bold text-white transition-all hover:opacity-90"
+                        style={{ background: isPublished ? '#ef4444' : 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
+                    >
+                        {isPublished ? <GlobeLock size={12} /> : <Globe size={12} />}
+                        <span className="hidden sm:inline">{isPublished ? 'Despublicar' : 'Publicar'}</span>
                     </button>
                 </div>
             </div>
@@ -570,8 +590,8 @@ export default function EditorPage() {
                     </div>
 
                     <div className={`transition-all duration-500 w-full md:w-auto ${previewMode === 'mobile' || mobileTab === 'preview'
-                            ? 'max-w-[320px] md:max-w-[280px] aspect-[9/19.5]'
-                            : 'max-w-sm aspect-[9/16]'
+                        ? 'max-w-[320px] md:max-w-[280px] aspect-[9/19.5]'
+                        : 'max-w-sm aspect-[9/16]'
                         }`}>
                         <div className="relative bg-[#1a1a2e] rounded-[44px] shadow-[0_40px_100px_rgba(0,0,0,0.3)] border border-white/10 overflow-hidden w-full h-full">
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-[#1a1a2e] z-30 rounded-b-3xl" />

@@ -59,21 +59,35 @@ function StatCard({
 }: { label: string; value: number; total: number; color: string; icon: React.ElementType }) {
     const pct = total > 0 ? Math.round((value / total) * 100) : 0;
     return (
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col gap-3">
+        <div
+            className="bg-white rounded-2xl p-5 border shadow-sm flex flex-col gap-4 transition-all hover:shadow-md hover:-translate-y-0.5"
+            style={{ borderColor: `${color}22` }}
+        >
+            {/* Header */}
             <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</span>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
-                    <Icon size={16} style={{ color }} />
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{label}</span>
+                <div
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm"
+                    style={{ background: `linear-gradient(135deg, ${color}22, ${color}44)` }}
+                >
+                    <Icon size={18} style={{ color }} />
                 </div>
             </div>
+            {/* Value + percent */}
             <div className="flex items-end justify-between">
-                <span className="text-3xl font-bold text-gray-800">{value}</span>
-                <span className="text-sm font-semibold" style={{ color }}>{pct}%</span>
+                <span className="text-4xl font-black" style={{ color: '#1a1a2e' }}>{value}</span>
+                <span
+                    className="text-xs font-bold px-2.5 py-1 rounded-full"
+                    style={{ background: `${color}18`, color }}
+                >
+                    {pct}%
+                </span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            {/* Progress bar */}
+            <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
                 <div
                     className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, background: color }}
+                    style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}99, ${color})` }}
                 />
             </div>
         </div>

@@ -308,33 +308,40 @@ export default function DashboardPage() {
 
             {/* Main content */}
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-                {/* Top bar */}
+                {/* ── HERO BANNER ──────────────────────────────────────────────── */}
                 <div
-                    className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-3"
-                    style={{ borderColor: '#f0dde3' }}
+                    className="relative overflow-hidden px-5 md:px-8 pt-6 pb-8"
+                    style={{ background: 'linear-gradient(135deg, #2d1b2d 0%, #7B2D8B 50%, #a35d6a 100%)' }}
                 >
-                    <div className="min-w-0">
-                        <h1
-                            className="text-xl md:text-2xl font-bold text-[#2d1b2d] truncate"
-                            style={{ fontFamily: "'Playfair Display', serif" }}
+                    {/* Decorative circles */}
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10 bg-white" />
+                    <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 bg-white" />
+                    <div className="absolute top-4 right-24 w-16 h-16 rounded-full opacity-5 bg-white" />
+
+                    <div className="relative flex items-center justify-between gap-4">
+                        <div className="flex flex-col gap-1">
+                            <p className="text-white/60 text-xs font-medium uppercase tracking-widest">Bienvenido</p>
+                            <h1
+                                className="text-2xl md:text-3xl font-black text-white"
+                                style={{ fontFamily: "'Playfair Display', serif" }}
+                            >
+                                {firstName} 👋
+                            </h1>
+                            <p className="text-white/70 text-sm mt-1">
+                                {events.length > 0
+                                    ? `${events.length} evento${events.length !== 1 ? 's' : ''} · ${events.filter(e => e.is_published).length} publicado${events.filter(e => e.is_published).length !== 1 ? 's' : ''}`
+                                    : 'Crea tu primera invitación digital ✨'}
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard/nuevo"
+                            className="flex items-center gap-2 text-[#7B2D8B] bg-white px-5 py-3 rounded-full font-black text-sm transition-all hover:scale-105 shadow-xl flex-shrink-0"
                         >
-                            Hola, {firstName} 👋
-                        </h1>
-                        <p className="text-xs text-[#7a5060] mt-0.5 hidden sm:block">
-                            {events.length > 0
-                                ? `Tienes ${events.length} evento${events.length !== 1 ? 's' : ''} creado${events.length !== 1 ? 's' : ''}`
-                                : 'Comienza creando tu primera invitación'}
-                        </p>
+                            <PlusCircle size={16} />
+                            <span className="hidden sm:inline">Crear</span>
+                            <span className="sm:hidden">+</span>
+                        </Link>
                     </div>
-                    <Link
-                        href="/dashboard/nuevo"
-                        className="flex items-center gap-2 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-full font-bold text-sm transition-all hover:opacity-90 shadow-md flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
-                    >
-                        <PlusCircle size={16} />
-                        <span className="hidden sm:inline">Crear nueva invitación</span>
-                        <span className="sm:hidden">Crear</span>
-                    </Link>
                 </div>
 
                 {/* Content */}
