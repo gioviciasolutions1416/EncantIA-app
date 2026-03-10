@@ -2,16 +2,21 @@ import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
-
-// Admin client — usa service role para operaciones server-side
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-);
-
 export async function POST(req: NextRequest) {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+        return NextResponse.json({ error: 'Pagos no configurados' }, { status: 503 });
+    }
+
+    const stripe = new Stripe(stripeKey, { apiVersion: '2026-02-25.clover' });
+
+    // Admin client — usa service role para operaciones server-side
+    const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
     const rawBody = await req.text();
     const sig = req.headers.get('stripe-signature');
 

@@ -1,15 +1,20 @@
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
-
 const PRICE_MAP: Record<string, string> = {
-    basico: process.env.STRIPE_PRICE_BASICO!,
-    rsvp: process.env.STRIPE_PRICE_RSVP!,
-    premium: process.env.STRIPE_PRICE_PREMIUM!,
+    basico: process.env.STRIPE_PRICE_BASICO ?? '',
+    rsvp: process.env.STRIPE_PRICE_RSVP ?? '',
+    premium: process.env.STRIPE_PRICE_PREMIUM ?? '',
 };
 
 export async function POST(req: NextRequest) {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+        return NextResponse.json({ error: 'Pagos no configurados aún' }, { status: 503 });
+    }
+
+    const stripe = new Stripe(stripeKey, { apiVersion: '2026-02-25.clover' });
+
     try {
         const { planId, userId } = await req.json();
 
