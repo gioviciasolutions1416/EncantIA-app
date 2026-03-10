@@ -71,49 +71,83 @@ export default function AccountPage() {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-[#fdfafc] flex flex-col md:flex-row">
-            {/* Minimal Sidebar for Account */}
-            <aside className="w-full md:w-64 border-r bg-white h-auto md:h-screen p-6 flex flex-col gap-8">
-                <Link href="/dashboard" className="group inline-block">
-                    <img
-                        src="/logo.png"
-                        alt="EncantIA"
-                        style={{
-                            height: '52px',
-                            width: 'auto',
-                            filter: 'drop-shadow(0 2px 6px rgba(163,93,106,0.3))'
-                        }}
-                        className="group-hover:scale-105 transition-transform duration-300"
-                    />
-                </Link>
-
-                <nav className="flex flex-col gap-2">
-                    <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-[#7a5060] hover:bg-rose-50 transition-colors">
-                        <LayoutDashboard size={18} /> Mis Eventos
+        <div className="min-h-screen bg-[#fdfafc] flex overflow-hidden">
+            {/* Sidebar */}
+            <aside className="hidden md:flex w-64 min-h-screen flex-col border-r bg-white flex-shrink-0" style={{ borderColor: '#f0dde3' }}>
+                <div className="px-6 py-6 border-b" style={{ borderColor: '#f0dde3' }}>
+                    <Link href="/" className="group inline-block">
+                        <img
+                            src="/logo.png"
+                            alt="EncantIA"
+                            style={{ height: '52px', width: 'auto', filter: 'drop-shadow(0 2px 6px rgba(163,93,106,0.3))' }}
+                            className="group-hover:scale-105 transition-transform duration-300"
+                        />
                     </Link>
-                    <Link href="/dashboard/nuevo" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-[#7a5060] hover:bg-rose-50 transition-colors">
-                        <PlusCircle size={18} /> Crear Evento
-                    </Link>
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-rose-50 text-[#7B2D8B]">
-                        <User size={18} /> Mi Cuenta
-                    </div>
+                </div>
+                <nav className="flex-1 px-3 py-6 flex flex-col gap-1">
+                    {[
+                        { href: '/dashboard', icon: LayoutDashboard, label: 'Mis Eventos', active: false },
+                        { href: '/dashboard/nuevo', icon: PlusCircle, label: 'Crear Evento', active: false },
+                        { href: '/dashboard/cuenta', icon: User, label: 'Mi Cuenta', active: true },
+                    ].map(({ href, icon: Icon, label, active }) => (
+                        <Link
+                            key={href}
+                            href={href}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                            style={{
+                                background: active ? 'linear-gradient(135deg, #f8e8ee, #f3e0f7)' : 'transparent',
+                                color: active ? '#7B2D8B' : '#7a5060',
+                                fontWeight: active ? 600 : 400,
+                            }}
+                        >
+                            <Icon size={18} />
+                            {label}
+                        </Link>
+                    ))}
                 </nav>
-
-                <div className="mt-auto pt-6 border-t flex flex-col gap-4">
-                    <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-50 hover:text-red-600 transition-all">
+                <div className="px-3 pb-6 border-t pt-4" style={{ borderColor: '#f0dde3' }}>
+                    <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-sm font-medium text-red-400 hover:bg-red-50 hover:text-red-600 transition-all">
                         <LogOut size={16} /> Cerrar sesión
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-                <div className="max-w-2xl mx-auto">
-                    <header className="mb-10">
-                        <h1 className="text-3xl font-bold text-[#2d1b2d] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>Configuración de Cuenta</h1>
-                        <p className="text-[#7a5060] text-sm">Gestiona tus datos personales y suscripción.</p>
-                    </header>
+            <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+                {/* ── HERO BANNER ──────────────────────────────────────────────── */}
+                <div
+                    className="relative overflow-hidden px-5 md:px-8 pt-6 pb-8"
+                    style={{ background: 'linear-gradient(135deg, #2d1b2d 0%, #7B2D8B 50%, #a35d6a 100%)' }}
+                >
+                    {/* Decorative circles */}
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10 bg-white" />
+                    <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 bg-white" />
+                    <div className="absolute top-4 right-24 w-16 h-16 rounded-full opacity-5 bg-white" />
 
+                    <div className="relative flex items-center justify-between gap-4">
+                        <div className="flex flex-col gap-1">
+                            <p className="text-white/60 text-xs font-medium uppercase tracking-widest">Ajustes</p>
+                            <h1
+                                className="text-2xl md:text-3xl font-black text-white"
+                                style={{ fontFamily: "'Playfair Display', serif" }}
+                            >
+                                Mi Cuenta
+                            </h1>
+                            <p className="text-white/70 text-sm mt-1">
+                                Gestiona tus datos personales y suscripción
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard"
+                            className="flex items-center gap-2 text-[#7B2D8B] bg-white px-5 py-3 rounded-full font-black text-sm transition-all hover:scale-105 shadow-xl flex-shrink-0"
+                        >
+                            <ArrowLeft size={16} />
+                            Volver
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="max-w-2xl mx-auto px-4 md:px-8 py-8 md:py-12">
                     <div className="grid gap-6">
                         {/* Profile Info */}
                         <section className="bg-white rounded-3xl border border-[#f0dde3] overflow-hidden shadow-sm">
@@ -154,31 +188,31 @@ export default function AccountPage() {
                                 </div>
                             </div>
                             <div className="p-8">
-                                <div className="flex items-center justify-between p-4 rounded-2xl border-2 border-dashed border-purple-100 bg-purple-50/20">
-                                    <div>
-                                        <p className="text-sm font-bold text-purple-700">Plan Gratuito (Básico)</p>
+                                <div className="flex items-center justify-between p-4 md:p-6 rounded-2xl border-2 border-dashed border-purple-100 bg-purple-50/20">
+                                    <div className="min-w-0">
+                                        <p className="text-sm md:text-base font-bold text-purple-700 truncate">Plan Gratuito (Básico)</p>
                                         <p className="text-xs text-purple-500/80">Vigente indefinidamente</p>
                                     </div>
-                                    <Link href="/planes" className="px-6 py-2 rounded-full bg-purple-600 text-white text-xs font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all">
+                                    <Link href="/planes" className="px-5 md:px-6 py-2 md:py-2.5 rounded-full bg-purple-600 text-white text-[10px] md:text-xs font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all flex-shrink-0">
                                         Mejorar Plan
                                     </Link>
                                 </div>
-                                <div className="mt-6 flex items-center justify-around text-center">
+                                <div className="mt-8 flex items-center justify-around text-center">
                                     <div>
-                                        <p className="text-2xl font-bold text-[#2d1b2d]">{eventCount}</p>
-                                        <p className="text-[10px] uppercase font-bold text-gray-400">Eventos Activos</p>
+                                        <p className="text-2xl md:text-3xl font-black text-[#2d1b2d]">{eventCount}</p>
+                                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Eventos</p>
                                     </div>
                                     <div className="w-px h-10 bg-gray-100" />
                                     <div>
-                                        <p className="text-2xl font-bold text-[#2d1b2d]">Ilimitado</p>
-                                        <p className="text-[10px] uppercase font-bold text-gray-400">Invitados RSVP</p>
+                                        <p className="text-2xl md:text-3xl font-black text-[#2d1b2d]">Ilimitado</p>
+                                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Invitados</p>
                                     </div>
                                 </div>
                             </div>
                         </section>
 
                         {/* Security */}
-                        <section className="bg-white rounded-3xl border border-[#f0dde3] overflow-hidden shadow-sm">
+                        <section className="bg-white rounded-3xl border border-[#f0dde3] overflow-hidden shadow-sm mb-6">
                             <div className="px-8 py-6 border-b border-[#f0dde3] bg-gray-50/50">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
@@ -199,6 +233,32 @@ export default function AccountPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Mobile Bottom Nav */}
+            <nav
+                className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50 flex items-center justify-around px-2 py-2"
+                style={{ borderColor: '#f0dde3' }}
+            >
+                <Link href="/dashboard" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all" style={{ color: '#7a5060' }}>
+                    <LayoutDashboard size={20} />
+                    <span className="text-[10px] font-semibold">Eventos</span>
+                </Link>
+                <Link href="/dashboard/nuevo" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all" style={{ color: '#7a5060' }}>
+                    <PlusCircle size={20} />
+                    <span className="text-[10px] font-semibold">Crear</span>
+                </Link>
+                <Link href="/dashboard/cuenta" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all" style={{ color: '#7B2D8B' }}>
+                    <User size={20} />
+                    <span className="text-[10px] font-semibold">Cuenta</span>
+                </Link>
+                <button
+                    onClick={handleSignOut}
+                    className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-red-400"
+                >
+                    <LogOut size={20} />
+                    <span className="text-[10px] font-semibold">Salir</span>
+                </button>
+            </nav>
         </div>
     );
 }
