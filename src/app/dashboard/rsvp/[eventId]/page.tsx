@@ -220,14 +220,15 @@ export default function RSVPDashboard() {
         <div className="min-h-screen flex bg-[#fdfafc]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
             {/* ── SIDEBAR ──────────────────────────────────────────────────────── */}
-            <aside className="w-60 min-h-screen flex flex-col border-r bg-white" style={{ borderColor: '#f0dde3' }}>
+            <aside className="hidden md:flex w-60 min-h-screen flex-col border-r bg-white flex-shrink-0" style={{ borderColor: '#f0dde3' }}>
                 <div className="px-5 py-5 border-b" style={{ borderColor: '#f0dde3' }}>
-                    <Link
-                        href="/"
-                        className="text-xl font-bold italic"
-                        style={{ fontFamily: "'Playfair Display', serif", background: 'linear-gradient(135deg, #7B2D8B, #a35d6a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                    >
-                        EncantIA
+                    <Link href="/" className="group inline-block">
+                        <img
+                            src="/logo.png"
+                            alt="EncantIA"
+                            style={{ height: '48px', width: 'auto', filter: 'drop-shadow(0 2px 6px rgba(163,93,106,0.3))' }}
+                            className="group-hover:scale-105 transition-transform duration-300"
+                        />
                     </Link>
                 </div>
                 <nav className="flex-1 px-3 py-5 flex flex-col gap-1">
@@ -253,20 +254,20 @@ export default function RSVPDashboard() {
             </aside>
 
             {/* ── MAIN ─────────────────────────────────────────────────────────── */}
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
 
                 {/* Top bar */}
-                <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-8 py-4 flex items-center gap-3" style={{ borderColor: '#f0dde3' }}>
-                    <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-[#7a5060] hover:text-[#a35d6a] transition-colors">
+                <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-4 md:px-8 py-3 md:py-4 flex items-center gap-2 md:gap-3" style={{ borderColor: '#f0dde3' }}>
+                    <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-[#7a5060] hover:text-[#a35d6a] transition-colors flex-shrink-0">
                         <ArrowLeft size={14} /> Dashboard
                     </Link>
                     <span className="text-[#e8d0d7]">/</span>
-                    <span className="text-sm text-[#7a5060] truncate max-w-xs">{event?.title}</span>
-                    <span className="text-[#e8d0d7]">/</span>
-                    <h1 className="text-sm font-bold text-[#2d1b2d]">Lista de Invitados</h1>
+                    <span className="text-sm text-[#7a5060] truncate max-w-[120px] md:max-w-xs">{event?.title}</span>
+                    <span className="text-[#e8d0d7] hidden sm:inline">/</span>
+                    <h1 className="text-sm font-bold text-[#2d1b2d] hidden sm:block">Lista de Invitados</h1>
                 </div>
 
-                <div className="px-8 py-8 flex flex-col gap-6">
+                <div className="px-4 md:px-8 py-5 md:py-8 flex flex-col gap-6">
 
                     {/* ── STATS ──── */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -578,6 +579,32 @@ export default function RSVPDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Mobile Bottom Nav */}
+            <nav
+                className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50 flex items-center justify-around px-2 py-2"
+                style={{ borderColor: '#f0dde3' }}
+            >
+                <Link href="/dashboard" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7B2D8B' }}>
+                    <LayoutDashboard size={20} />
+                    <span className="text-[10px] font-semibold">Eventos</span>
+                </Link>
+                <Link href="/dashboard/nuevo" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7a5060' }}>
+                    <PlusCircle size={20} />
+                    <span className="text-[10px] font-semibold">Crear</span>
+                </Link>
+                <Link href="/dashboard/cuenta" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7a5060' }}>
+                    <User size={20} />
+                    <span className="text-[10px] font-semibold">Cuenta</span>
+                </Link>
+                <button
+                    onClick={async () => { await supabase.auth.signOut(); router.replace('/login'); }}
+                    className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-red-400"
+                >
+                    <LogOut size={20} />
+                    <span className="text-[10px] font-semibold">Salir</span>
+                </button>
+            </nav>
         </div>
     );
 }
