@@ -5,18 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import {
-    LayoutDashboard,
-    PlusCircle,
-    User,
-    LogOut,
-    Calendar,
-    MapPin,
-    Eye,
-    Pencil,
-    Loader2,
-    PartyPopper,
-    Users,
+    LayoutDashboard, PlusCircle, User, LogOut, Eye, Pencil, Users,
+    Calendar, MapPin, PartyPopper, Loader2, Search, X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface UserProfile {
@@ -230,17 +222,17 @@ function EmptyState() {
                 className="text-2xl font-bold text-[#2d1b2d] mb-3"
                 style={{ fontFamily: "'Playfair Display', serif" }}
             >
-                Aún no tienes eventos
+                Aún no tienes invitaciones
             </h3>
-            <p className="text-sm text-[#7a5060] mb-8 max-w-sm">
-                Crea tu primera invitación digital y sorprende a tus invitados con una experiencia única.
+            <p className="text-[#7a5060] text-sm mb-10 max-w-xs text-center opacity-80">
+                Crea tu primera invitación digital y sorprende a tus invitados con un diseño único.
             </p>
             <Link
                 href="/dashboard/nuevo"
-                className="inline-flex items-center gap-2 text-white px-8 py-3.5 rounded-full font-bold text-sm transition-all hover:opacity-90 shadow-lg"
+                className="inline-flex items-center gap-2 text-white px-8 py-4 rounded-full font-black text-sm transition-all hover:scale-105 shadow-xl hover:shadow-2xl active:scale-95"
                 style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
             >
-                <PlusCircle size={16} /> Crear mi primera invitación
+                <PlusCircle size={18} /> Crear mi primera invitación
             </Link>
         </div>
     );
@@ -253,6 +245,7 @@ export default function DashboardPage() {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [eventsLoading, setEventsLoading] = useState(true);
+    const [search, setSearch] = useState('');
 
     const loadEvents = useCallback(async (userId: string) => {
         setEventsLoading(true);
@@ -345,6 +338,29 @@ export default function DashboardPage() {
 
                 {/* Content */}
                 <div className="px-4 md:px-8 py-5 md:py-8">
+                    {/* ── SEARCH & FILTERS ──── */}
+                    <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div className="relative w-full md:max-w-md">
+                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por título o tipo..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="w-full pl-11 pr-4 py-3 rounded-2xl border bg-white outline-none focus:ring-2 focus:ring-[#7B2D8B]/10 focus:border-[#7B2D8B] transition-all text-sm shadow-sm"
+                                style={{ borderColor: '#f0dde3' }}
+                            />
+                            {search && (
+                                <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 bg-white px-4 py-2 rounded-full border shadow-sm" style={{ borderColor: '#f0dde3' }}>
+                            {events.filter(e => e.title.toLowerCase().includes(search.toLowerCase()) || e.event_type.toLowerCase().includes(search.toLowerCase())).length} RESULTADOS
+                        </div>
+                    </div>
+
                     {eventsLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {[1, 2, 3].map((i) => (
@@ -370,16 +386,23 @@ export default function DashboardPage() {
                     ) : events.length === 0 ? (
                         <EmptyState />
                     ) : (
-                        <>
-                            <p className="text-sm text-[#7a5060] mb-6 font-medium">
-                                {events.length} evento{events.length !== 1 ? 's' : ''}
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                {events.map((event) => (
-                                    <EventCard key={event.id} event={event} />
-                                ))}
-                            </div>
-                        </>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <AnimatePresence mode="popLayout">
+                                {events
+                                    .filter(e => e.title.toLowerCase().includes(search.toLowerCase()) || e.event_type.toLowerCase().includes(search.toLowerCase()))
+                                    .map((event, idx) => (
+                                        <motion.div
+                                            key={event.id}
+                                            layout
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                        >
+                                            <EventCard event={event} />
+                                        </motion.div>
+                                    ))}
+                            </AnimatePresence>
+                        </div>
                     )}
                 </div>
             </main>

@@ -9,7 +9,7 @@ import {
     ArrowLeft, Save, Globe, GlobeLock, Loader2, ChevronDown, ChevronUp,
     Smartphone, Monitor, Copy, Check, Wand2, Upload, Calendar, Clock,
     MapPin, MessageSquare, Shirt, Gift, Type, Palette, X, CheckCircle2,
-    Music, Image as ImageIcon, ExternalLink, Eye, Info, Plus
+    Music, Image as ImageIcon, ExternalLink, Eye, Info, Plus, Layout
 } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -33,6 +33,10 @@ interface EventData {
     views: number;
     location_url: string;
     location_waze_url: string;
+    // Ceremonial fields
+    parents_bride: string;
+    parents_groom: string;
+    godparents: string;
 }
 
 interface Theme {
@@ -44,6 +48,45 @@ interface Theme {
     font: string;
     style: string;
 }
+
+const PRESET_TEMPLATES = [
+    {
+        name: 'Minimal Gold',
+        primary: '#C5A059',
+        secondary: '#2D2D2D',
+        background: '#FFFFFF',
+        text: '#2D2D2D',
+        accent: '#F4EBE0',
+        font: 'Playfair Display'
+    },
+    {
+        name: 'Royal Navy',
+        primary: '#1B2B48',
+        secondary: '#C5A059',
+        background: '#F8F9FA',
+        text: '#1B2B48',
+        accent: '#D4AF37',
+        font: 'Cinzel'
+    },
+    {
+        name: 'Tropical Bloom',
+        primary: '#E94E77',
+        secondary: '#2E8B57',
+        background: '#FDFCF0',
+        text: '#2D2D2D',
+        accent: '#F1D4D4',
+        font: 'Montserrat'
+    },
+    {
+        name: 'Modern Rose',
+        primary: '#A35D6A',
+        secondary: '#7B2D8B',
+        background: '#FAF5F7',
+        text: '#4A2C2C',
+        accent: '#E8C49A',
+        font: 'Alex Brush'
+    }
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const inputCls =
@@ -87,7 +130,7 @@ function InvitationPreview({ data }: { data: EventData }) {
 
     return (
         <div
-            className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden"
+            className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden text-center"
             style={{ background: bg, fontFamily: `'${font}', serif` }}
         >
             {/* Cover image */}
@@ -99,15 +142,13 @@ function InvitationPreview({ data }: { data: EventData }) {
             ) : (
                 <div
                     className="absolute inset-0 opacity-20"
-                    style={{
-                        background: `radial-gradient(ellipse at center, ${accent}88, ${primary}44)`,
-                    }}
+                    style={{ background: `radial-gradient(ellipse at center, ${accent}88, ${primary}44)` }}
                 />
             )}
 
-            {/* Content */}
+            {/* Content Container */}
             <div
-                className="relative z-10 flex flex-col items-center text-center px-6 py-8 gap-3"
+                className="relative z-10 flex flex-col items-center px-6 py-8 gap-3"
                 style={{ color: data.cover_image_url ? '#fff' : textColor }}
             >
                 <span
@@ -122,15 +163,35 @@ function InvitationPreview({ data }: { data: EventData }) {
 
                 <h2
                     className="text-2xl font-bold leading-tight"
-                    style={{ fontFamily: `'${font}', serif`, textShadow: data.cover_image_url ? '0 2px 10px rgba(0,0,0,0.5)' : 'none' }}
+                    style={{
+                        fontFamily: `'${font}', serif`,
+                        textShadow: data.cover_image_url ? '0 2px 10px rgba(0,0,0,0.5)' : 'none'
+                    }}
                 >
                     {data.title || 'Tu invitación'}
                 </h2>
 
+                {/* Family Info */}
+                {(data.parents_bride || data.parents_groom || data.godparents) && (
+                    <div className="flex flex-col gap-1 mt-1 opacity-70">
+                        {data.event_type === 'Boda' ? (
+                            <>
+                                {data.parents_bride && <p className="text-[9px] uppercase tracking-widest leading-tight">Padres de la Novia: <span className="font-bold">{data.parents_bride}</span></p>}
+                                {data.parents_groom && <p className="text-[9px] uppercase tracking-widest leading-tight">Padres del Novio: <span className="font-bold">{data.parents_groom}</span></p>}
+                            </>
+                        ) : (
+                            <>
+                                {data.parents_bride && <p className="text-[9px] uppercase tracking-widest leading-tight">Padres: <span className="font-bold">{data.parents_bride}</span></p>}
+                                {data.godparents && <p className="text-[9px] uppercase tracking-widest leading-tight">Padrinos: <span className="font-bold">{data.godparents}</span></p>}
+                            </>
+                        )}
+                    </div>
+                )}
+
                 <div className="flex items-center gap-3 w-full max-w-[160px]">
-                    <div className="h-[1px] flex-1" style={{ background: data.cover_image_url ? 'rgba(255,255,255,0.4)' : `${accent}` }} />
+                    <div className="h-[1px] flex-1" style={{ background: data.cover_image_url ? 'rgba(255,255,255,0.4)' : accent }} />
                     <div className="w-1.5 h-1.5 rounded-full" style={{ background: data.cover_image_url ? '#fff' : accent }} />
-                    <div className="h-[1px] flex-1" style={{ background: data.cover_image_url ? 'rgba(255,255,255,0.4)' : `${accent}` }} />
+                    <div className="h-[1px] flex-1" style={{ background: data.cover_image_url ? 'rgba(255,255,255,0.4)' : accent }} />
                 </div>
 
                 {formattedDate && (
@@ -141,16 +202,13 @@ function InvitationPreview({ data }: { data: EventData }) {
 
                 {(data.event_time || data.venue) && (
                     <div className="flex flex-col gap-1 text-[10px] opacity-80">
-                        {data.event_time && <span>{data.event_time.slice(0, 5)} hrs</span>}
+                        {data.event_time && <span>{data.event_time} hrs</span>}
                         {data.venue && <span className="max-w-[180px]">{data.venue}</span>}
                     </div>
                 )}
 
                 {data.message && (
-                    <p
-                        className="text-[10px] leading-relaxed opacity-80 max-w-[180px] mt-1 italic"
-                        style={{ fontFamily: 'sans-serif' }}
-                    >
+                    <p className="text-[10px] leading-relaxed opacity-80 max-w-[180px] mt-1 italic">
                         "{data.message}"
                     </p>
                 )}
@@ -192,7 +250,7 @@ export default function EditorPage() {
     const [uploadLoading, setUploadLoading] = useState(false);
     const [galleryLoading, setGalleryLoading] = useState(false);
     const [userPlan, setUserPlan] = useState('free');
-    const [openSections, setOpenSections] = useState({ info: true, personal: false, theme: false, extra: false });
+    const [openSections, setOpenSections] = useState({ info: true, templates: false, personal: false, theme: false, extra: false });
     const [titleEditing, setTitleEditing] = useState(false);
     const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -256,6 +314,9 @@ export default function EditorPage() {
             gallery_urls: eventData.gallery_urls || [],
             location_url: eventData.location_url,
             location_waze_url: eventData.location_waze_url,
+            parents_bride: eventData.parents_bride,
+            parents_groom: eventData.parents_groom,
+            godparents: eventData.godparents,
         }).eq('id', eventData.id);
 
         if (!error && !auto) {
@@ -455,6 +516,59 @@ export default function EditorPage() {
                                     <label className="text-xs font-semibold text-[#7a5060] mb-1.5 flex items-center gap-1.5"><MessageSquare size={11} /> Mensaje especial</label>
                                     <textarea value={eventData.message || ''} onChange={(e) => update('message', e.target.value)} placeholder="Unas palabras cortas para tus invitados..." rows={2} className={inputCls + ' resize-none'} style={{ borderColor }} />
                                 </div>
+
+                                {/* Dynamic fields based on event type */}
+                                {eventData.event_type === 'Boda' && (
+                                    <>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#7a5060] mb-1.5 block">Padres de la Novia</label>
+                                            <input value={eventData.parents_bride || ''} onChange={(e) => update('parents_bride', e.target.value)} placeholder="Ej: Diana y Robert" className={inputCls} style={{ borderColor }} />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#7a5060] mb-1.5 block">Padres del Novio</label>
+                                            <input value={eventData.parents_groom || ''} onChange={(e) => update('parents_groom', e.target.value)} placeholder="Ej: Martha y Luis" className={inputCls} style={{ borderColor }} />
+                                        </div>
+                                    </>
+                                )}
+                                {(eventData.event_type === 'Bautizo' || eventData.event_type === 'Primera Comunión' || eventData.event_type === 'XV Años') && (
+                                    <>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#7a5060] mb-1.5 block">Padres</label>
+                                            <input value={eventData.parents_bride || ''} onChange={(e) => update('parents_bride', e.target.value)} placeholder="Ej: Diana y Robert" className={inputCls} style={{ borderColor }} />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-[#7a5060] mb-1.5 block">Padrinos</label>
+                                            <input value={eventData.godparents || ''} onChange={(e) => update('godparents', e.target.value)} placeholder="Ej: Martha y Luis" className={inputCls} style={{ borderColor }} />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MASTER TEMPLATES SECTION */}
+                    <div className="border-b" style={{ borderColor }}>
+                        <SectionHeader icon={<Layout size={15} />} title="Plantillas Maestras" open={openSections.templates} onToggle={() => toggleSection('templates')} />
+                        {openSections.templates && (
+                            <div className="px-5 pb-5 grid grid-cols-2 gap-3">
+                                {PRESET_TEMPLATES.map((tmpl) => (
+                                    <button
+                                        key={tmpl.name}
+                                        onClick={() => {
+                                            update('styles_json', { ...tmpl } as any);
+                                            toast.success(`Estilo "${tmpl.name}" aplicado`);
+                                        }}
+                                        className="group relative flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all hover:scale-105 active:scale-95 text-center overflow-hidden"
+                                        style={{ borderColor }}
+                                    >
+                                        <div className="w-full h-12 rounded-lg mb-1 flex items-center justify-center relative overflow-hidden" style={{ background: tmpl.background }}>
+                                            <div className="absolute inset-0 opacity-10" style={{ background: `linear-gradient(135deg, ${tmpl.primary}, ${tmpl.secondary})` }} />
+                                            <span className="text-xl font-bold" style={{ color: tmpl.primary, fontFamily: `'${tmpl.font}', serif` }}>Aa</span>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-[#7a5060] uppercase tracking-wider">{tmpl.name}</span>
+                                        <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: `linear-gradient(90deg, ${tmpl.primary}, ${tmpl.secondary})` }} />
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </div>

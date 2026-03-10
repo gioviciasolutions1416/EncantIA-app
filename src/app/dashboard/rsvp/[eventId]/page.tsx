@@ -4,11 +4,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
+import { toast } from 'sonner';
 import {
     ArrowLeft, Search, Plus, Download, Copy, CheckCircle2,
     Loader2, X, ChevronDown, Users, UserCheck, Clock, UserX,
-    LayoutDashboard, PlusCircle, User, LogOut, Eye,
+    LayoutDashboard, PlusCircle, User, LogOut, Eye, MessageCircle,
+    Trash2, CheckSquare, Square, MoreHorizontal,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Guest {
@@ -111,6 +114,8 @@ export default function RSVPDashboard() {
     const [generatedLink, setGeneratedLink] = useState<string | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
     const [filterOpen, setFilterOpen] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [justUpdatedId, setJustUpdatedId] = useState<string | null>(null);
 
     // ── Load data ──────────────────────────────────────────────────────────────
     const fetchGuests = useCallback(async () => {
@@ -148,7 +153,14 @@ export default function RSVPDashboard() {
         const channel = supabase
             .channel(`rsvp-${eventId}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'guests', filter: `event_id=eq.${eventId}` }, fetchGuests)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'rsvp' }, fetchGuests)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rsvp' }, (payload) => {
+                fetchGuests();
+                toast.success('¡Nueva respuesta recibida! 🔔', {
+                    description: 'Un invitado acaba de actualizar su asistencia.',
+                    duration: 5000,
+                });
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rsvp' }, fetchGuests)
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
@@ -186,8 +198,45 @@ export default function RSVPDashboard() {
             setGeneratedLink(link);
             setAddForm({ name: '', phone: '', email: '' });
             await fetchGuests();
+            toast.success('¡Invitado agregado!');
         }
         setAddLoading(false);
+    };
+
+    // ── Bulk Actions ────────────────────────────────────────────────────────
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+    const toggleAll = () => {
+        if (selectedIds.length === filtered.length && filtered.length > 0) setSelectedIds([]);
+        else setSelectedIds(filtered.map(g => g.id));
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`¿Estás seguro de eliminar ${selectedIds.length} invitados?`)) return;
+        const { error } = await supabase.from('guests').delete().in('id', selectedIds);
+        if (!error) {
+            toast.success(`${selectedIds.length} invitados eliminados`);
+            setSelectedIds([]);
+            fetchGuests();
+        }
+    };
+
+    const handleBulkConfirm = async () => {
+        const { error } = await supabase.from('rsvp').upsert(
+            selectedIds.map(id => ({ guest_id: id, status: 'confirmed', event_id: eventId }))
+        );
+        if (!error) {
+            toast.success(`${selectedIds.length} invitados confirmados`);
+            setSelectedIds([]);
+            fetchGuests();
+        }
+    };
+
+    const shareWhatsApp = (g: Guest) => {
+        const link = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${event?.slug}?token=${g.invitation_token}`;
+        const text = encodeURIComponent(`🌟 *¡HOLA ${g.name.toUpperCase()}!* 🌟\n\nNos encantaría que nos acompañes en nuestro gran día. ❤️\n\nTe compartimos tu *invitación digital personalizada* aquí:\n🔗 ${link}\n\n¡Esperamos verte ahí y celebrar juntos! ✨`);
+        window.open(`https://wa.me/?text=${text}`, '_blank');
     };
 
     // ── Export CSV ─────────────────────────────────────────────────────────────
@@ -213,11 +262,27 @@ export default function RSVPDashboard() {
         URL.revokeObjectURL(url);
     };
 
+    const copyAllLinks = () => {
+        const text = guests.map(g => `${g.name}: ${guestLink(g)}`).join('\n');
+        navigator.clipboard.writeText(text);
+        toast.success(`Copiados ${guests.length} links al portapapeles`);
+    };
+
+    const copySelectedLinks = () => {
+        const selectedGuests = guests.filter(g => selectedIds.includes(g.id));
+        const text = selectedGuests.map(g => `${g.name}: ${guestLink(g)}`).join('\n');
+        navigator.clipboard.writeText(text);
+        toast.success(`Copiados ${selectedIds.length} links al portapapeles`);
+    };
+
     const copyToClipboard = (text: string, id: string) => {
         navigator.clipboard.writeText(text);
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
     };
+
+    const FILTER_LABELS = { all: 'Todos', confirmed: 'Confirmados', pending: 'Pendientes', declined: 'Declinaron' };
+    const guestLink = (g: Guest) => `${process.env.NEXT_PUBLIC_APP_URL}/invite/${event?.slug}?token=${g.invitation_token}`;
 
     if (loading) {
         return (
@@ -226,9 +291,6 @@ export default function RSVPDashboard() {
             </div>
         );
     }
-
-    const FILTER_LABELS = { all: 'Todos', confirmed: 'Confirmados', pending: 'Pendientes', declined: 'Declinaron' };
-    const guestLink = (g: Guest) => `${process.env.NEXT_PUBLIC_APP_URL}/invite/${event?.slug}?token=${g.invitation_token}`;
 
     return (
         <div className="min-h-screen flex bg-[#fdfafc]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -317,11 +379,40 @@ export default function RSVPDashboard() {
                 <div className="px-4 md:px-8 py-5 md:py-8 flex flex-col gap-6">
 
                     {/* ── STATS ──── */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard label="Total invitados" value={total} total={total} color="#3498db" icon={Users} />
-                        <StatCard label="Confirmados" value={confirmed} total={total} color="#27ae60" icon={UserCheck} />
-                        <StatCard label="Pendientes" value={pending} total={total} color="#f39c12" icon={Clock} />
-                        <StatCard label="Declinaron" value={declined} total={total} color="#e74c3c" icon={UserX} />
+                    <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <StatCard label="Total invitados" value={total} total={total} color="#3498db" icon={Users} />
+                            <StatCard label="Confirmados" value={confirmed} total={total} color="#27ae60" icon={UserCheck} />
+                            <StatCard label="Pendientes" value={pending} total={total} color="#f39c12" icon={Clock} />
+                            <StatCard label="Declinaron" value={declined} total={total} color="#e74c3c" icon={UserX} />
+                        </div>
+
+                        {/* Visual Donut Chart */}
+                        <div className="bg-white rounded-3xl p-6 border shadow-sm flex flex-col items-center justify-center gap-4 min-w-[200px]" style={{ borderColor: '#f0dde3' }}>
+                            <div className="relative w-28 h-28">
+                                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="16" fill="none" stroke="#f3f4f6" strokeWidth="4" />
+                                    {total > 0 && (
+                                        <>
+                                            {/* Declined segment */}
+                                            <circle cx="18" cy="18" r="16" fill="none" stroke="#e74c3c" strokeWidth="4" strokeDasharray={`${((declined + pending + confirmed) / total) * 100} 100`} />
+                                            {/* Pending segment */}
+                                            <circle cx="18" cy="18" r="16" fill="none" stroke="#f39c12" strokeWidth="4" strokeDasharray={`${((pending + confirmed) / total) * 100} 100`} />
+                                            {/* Confirmed segment */}
+                                            <circle cx="18" cy="18" r="16" fill="none" stroke="#27ae60" strokeWidth="4" strokeDasharray={`${(confirmed / total) * 100} 100`} />
+                                        </>
+                                    )}
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-xl font-black text-[#2d1b2d]">{total > 0 ? Math.round((confirmed / total) * 100) : 0}%</span>
+                                    <span className="text-[8px] font-bold text-gray-400">OK</span>
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xs font-bold text-[#7a5060]">Tasa de Asistencia</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Basado en confirmados</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* ── CONTROLS ── */}
@@ -334,7 +425,7 @@ export default function RSVPDashboard() {
                                 placeholder="Buscar invitado…"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-[#a35d6a]/20 focus:border-[#a35d6a] transition-all bg-white"
+                                className="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-[#a35d6a]/20 focus:border-[#a35d6a] transition-all bg-white shadow-sm"
                                 style={{ borderColor: '#e8d0d7' }}
                             />
                         </div>
@@ -343,44 +434,90 @@ export default function RSVPDashboard() {
                         <div className="relative">
                             <button
                                 onClick={() => setFilterOpen(p => !p)}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold bg-white transition-all hover:bg-gray-50"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold bg-white transition-all hover:bg-gray-50 shadow-sm"
                                 style={{ borderColor: '#e8d0d7', color: '#7a5060' }}
                             >
                                 {FILTER_LABELS[filter]} <ChevronDown size={14} />
                             </button>
-                            {filterOpen && (
-                                <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-xl border shadow-lg z-20 overflow-hidden" style={{ borderColor: '#e8d0d7' }}>
-                                    {(Object.keys(FILTER_LABELS) as Array<keyof typeof FILTER_LABELS>).map(f => (
-                                        <button
-                                            key={f}
-                                            onClick={() => { setFilter(f); setFilterOpen(false); }}
-                                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-rose-50 transition-colors"
-                                            style={{ color: filter === f ? '#a35d6a' : '#2d1b2d', fontWeight: filter === f ? 700 : 400 }}
-                                        >
-                                            {FILTER_LABELS[f]}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <AnimatePresence>
+                                {filterOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                        className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl border shadow-xl z-50 overflow-hidden py-1.5"
+                                        style={{ borderColor: '#f0dde3' }}
+                                    >
+                                        {(Object.keys(FILTER_LABELS) as Array<keyof typeof FILTER_LABELS>).map(f => (
+                                            <button
+                                                key={f}
+                                                onClick={() => { setFilter(f); setFilterOpen(false); }}
+                                                className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center justify-between ${filter === f ? 'bg-rose-50 text-[#7B2D8B] font-bold' : 'text-[#7a5060] hover:bg-gray-50'}`}
+                                            >
+                                                {FILTER_LABELS[f]}
+                                                {filter === f && <CheckCircle2 size={12} />}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        {/* Add guest */}
-                        <button
-                            onClick={() => { setShowAddModal(true); setGeneratedLink(null); }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
-                            style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
-                        >
-                            <Plus size={15} /> Agregar invitado
-                        </button>
+                        {/* Bulk actions - Only if selected */}
+                        <AnimatePresence>
+                            {selectedIds.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                                    exit={{ opacity: 0, x: -20, scale: 0.9 }}
+                                    className="flex items-center gap-2 bg-[#7B2D8B]/5 px-4 py-2 rounded-2xl border border-[#7B2D8B]/20 shadow-lg backdrop-blur-sm"
+                                >
+                                    <span className="text-xs font-black text-[#7B2D8B] border-r pr-3 mr-1">{selectedIds.length}</span>
+                                    <button
+                                        onClick={copySelectedLinks}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#7B2D8B]/20 text-[#7B2D8B] rounded-full text-[10px] font-bold hover:bg-[#7B2D8B]/10 transition-all shadow-sm"
+                                    >
+                                        <Copy size={12} /> Copiar Links
+                                    </button>
+                                    <button
+                                        onClick={handleBulkConfirm}
+                                        className="px-3 py-1.5 bg-[#27ae60] text-white rounded-full text-[10px] font-bold shadow-md shadow-green-200 hover:scale-105 transition-all"
+                                    >
+                                        Confirmar
+                                    </button>
+                                    <button
+                                        onClick={handleBulkDelete}
+                                        className="px-3 py-1.5 bg-red-400 text-white rounded-full text-[10px] font-bold shadow-md shadow-red-200 hover:scale-105 transition-all"
+                                    >
+                                        Eliminar
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedIds([])}
+                                        className="ml-1 p-1.5 text-gray-400"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                        {/* Export CSV */}
-                        <button
-                            onClick={exportCSV}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold bg-white hover:bg-gray-50 transition-all"
-                            style={{ borderColor: '#e8d0d7', color: '#7a5060' }}
-                        >
-                            <Download size={14} /> Exportar CSV
-                        </button>
+                        <div className="flex items-center gap-2 md:ml-auto">
+                            <button
+                                onClick={() => { setShowAddModal(true); setGeneratedLink(null); }}
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-black text-white transition-all hover:scale-105 shadow-xl shadow-rose-100"
+                                style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
+                            >
+                                <Plus size={16} /> Agregar
+                            </button>
+                            <button
+                                onClick={exportCSV}
+                                className="p-2.5 rounded-full border bg-white hover:bg-gray-50 transition-all shadow-sm"
+                                style={{ borderColor: '#e8d0d7', color: '#7a5060' }}
+                                title="Exportar CSV"
+                            >
+                                <Download size={16} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* ── TABLE ──── */}
@@ -389,6 +526,13 @@ export default function RSVPDashboard() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b" style={{ borderColor: '#f0dde3', background: '#fdfafc' }}>
+                                        <th className="px-4 py-3 text-left w-10">
+                                            <button onClick={toggleAll} className="p-1 rounded hover:bg-rose-50">
+                                                {selectedIds.length === filtered.length && filtered.length > 0
+                                                    ? <CheckSquare size={16} className="text-[#a35d6a]" />
+                                                    : <Square size={16} className="text-gray-300" />}
+                                            </button>
+                                        </th>
                                         {['Nombre', 'Estado', 'Acompañantes', 'Restricciones', 'Mensaje', 'Respondió', 'Acciones'].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                                         ))}
@@ -397,57 +541,80 @@ export default function RSVPDashboard() {
                                 <tbody>
                                     {filtered.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
+                                            <td colSpan={8} className="px-4 py-12 text-center text-gray-400 text-sm">
                                                 {search ? 'No se encontraron invitados.' : 'Aún no hay invitados. ¡Agrega el primero!'}
                                             </td>
                                         </tr>
-                                    ) : filtered.map(g => {
-                                        const status = g.rsvp?.status || 'pending';
-                                        return (
-                                            <tr
-                                                key={g.id}
-                                                className="border-b hover:bg-rose-50/30 transition-colors cursor-pointer"
-                                                style={{ borderColor: '#f9f0f3' }}
-                                                onClick={() => setSelectedGuest(g)}
-                                            >
-                                                <td className="px-4 py-3 font-semibold text-[#2d1b2d] whitespace-nowrap">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-7 h-7 rounded-full bg-rose-100 flex items-center justify-center text-[#a35d6a] text-xs font-bold flex-shrink-0">
-                                                            {g.name[0].toUpperCase()}
-                                                        </div>
-                                                        {g.name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                    <StatusChip status={status as keyof typeof STATUS_CONFIG} />
-                                                </td>
-                                                <td className="px-4 py-3 text-center text-gray-500">{g.rsvp?.companions ?? '—'}</td>
-                                                <td className="px-4 py-3 text-gray-500 max-w-[150px] truncate">{g.rsvp?.dietary_restrictions || '—'}</td>
-                                                <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate italic">{g.rsvp?.message || '—'}</td>
-                                                <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
-                                                    {g.rsvp?.responded_at ? new Date(g.rsvp.responded_at).toLocaleDateString('es-MX') : '—'}
-                                                </td>
-                                                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            onClick={() => setSelectedGuest(g)}
-                                                            className="p-1.5 rounded-lg hover:bg-rose-50 text-[#a35d6a] transition-colors"
-                                                            title="Ver detalle"
-                                                        >
-                                                            <Eye size={14} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => copyToClipboard(guestLink(g), g.id)}
-                                                            className="p-1.5 rounded-lg hover:bg-rose-50 text-[#a35d6a] transition-colors"
-                                                            title="Copiar link"
-                                                        >
-                                                            {copied === g.id ? <CheckCircle2 size={14} className="text-green-500" /> : <Copy size={14} />}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                    ) : (
+                                        <AnimatePresence mode="popLayout">
+                                            {filtered.map(g => {
+                                                const status = g.rsvp?.status || 'pending';
+                                                const isSelected = selectedIds.includes(g.id);
+                                                return (
+                                                    <motion.tr
+                                                        key={g.id}
+                                                        layout
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        className={`border-b transition-colors cursor-pointer ${isSelected ? 'bg-[#7B2D8B]/5' : 'hover:bg-rose-50/30'}`}
+                                                        style={{ borderColor: '#f9f0f3' }}
+                                                        onClick={() => setSelectedGuest(g)}
+                                                    >
+                                                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                                                            <button onClick={() => toggleSelect(g.id)} className="p-1 rounded">
+                                                                {isSelected
+                                                                    ? <CheckSquare size={16} className="text-[#a35d6a]" />
+                                                                    : <Square size={16} className="text-gray-300" />}
+                                                            </button>
+                                                        </td>
+                                                        <td className="px-4 py-3 font-semibold text-[#2d1b2d] whitespace-nowrap">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-7 h-7 rounded-full bg-rose-100 flex items-center justify-center text-[#a35d6a] text-xs font-bold flex-shrink-0">
+                                                                    {g.name[0].toUpperCase()}
+                                                                </div>
+                                                                {g.name}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                            <StatusChip status={status as keyof typeof STATUS_CONFIG} />
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center text-gray-500">{g.rsvp?.companions ?? '—'}</td>
+                                                        <td className="px-4 py-3 text-gray-500 max-w-[150px] truncate">{g.rsvp?.dietary_restrictions || '—'}</td>
+                                                        <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate italic">{g.rsvp?.message || '—'}</td>
+                                                        <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
+                                                            {g.rsvp?.responded_at ? new Date(g.rsvp.responded_at).toLocaleDateString('es-MX') : '—'}
+                                                        </td>
+                                                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                                                            <div className="flex items-center gap-1">
+                                                                <button
+                                                                    onClick={() => shareWhatsApp(g)}
+                                                                    className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-all"
+                                                                    title="Enviar por WhatsApp"
+                                                                >
+                                                                    <MessageCircle size={14} fill="currentColor" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setSelectedGuest(g)}
+                                                                    className="p-1.5 rounded-lg hover:bg-rose-50 text-[#a35d6a] transition-colors"
+                                                                    title="Ver detalle"
+                                                                >
+                                                                    <Eye size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => copyToClipboard(guestLink(g), g.id)}
+                                                                    className="p-1.5 rounded-lg hover:bg-rose-50 text-[#a35d6a] transition-colors"
+                                                                    title="Copiar link"
+                                                                >
+                                                                    {copied === g.id ? <CheckCircle2 size={14} className="text-green-500" /> : <Copy size={14} />}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </motion.tr>
+                                                );
+                                            })}
+                                        </AnimatePresence>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

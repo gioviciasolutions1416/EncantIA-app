@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { MapPin, Calendar, CheckCircle2, X, Loader2, Music, Volume2, VolumeX, Navigation, ExternalLink, Gift, Clock, Camera } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,6 +30,9 @@ interface EventData {
     gallery_urls: string[];
     location_url: string;
     location_waze_url: string;
+    parents_bride: string;
+    parents_groom: string;
+    godparents: string;
 }
 
 interface TimeLeft { days: number; hours: number; minutes: number; seconds: number; }
@@ -218,6 +223,8 @@ export default function InvitePage() {
     const [loading, setLoading] = useState(true);
     const [showRSVP, setShowRSVP] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [liveUrls, setLiveUrls] = useState<string[]>([]);
+    const [galleryLoading, setGalleryLoading] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
@@ -225,6 +232,7 @@ export default function InvitePage() {
             const { data } = await supabase.from('events').select('*').eq('slug', slug).single();
             if (data && data.is_published) {
                 setEvent(data as EventData);
+                setLiveUrls(data.styles_json?.live_photos || []);
                 // Increment views
                 await supabase.from('events').update({ views: (data.views || 0) + 1 }).eq('id', data.id);
             }
@@ -232,6 +240,32 @@ export default function InvitePage() {
         };
         loadEvent();
     }, [slug]);
+
+    const handleLiveUpload = async (file: File) => {
+        if (!event) return;
+        setGalleryLoading(true);
+        try {
+            const ext = file.name.split('.').pop();
+            const fileName = `live_${Date.now()}.${ext}`;
+            const path = `live/${event.id}/${fileName}`;
+            const { error } = await supabase.storage.from('covers').upload(path, file);
+            if (error) throw error;
+            const { data: { publicUrl } } = supabase.storage.from('covers').getPublicUrl(path);
+
+            const newUrls = [publicUrl, ...liveUrls].slice(0, 50); // Limit to 50
+            setLiveUrls(newUrls);
+
+            // Update event styles_json to persist (quick hack)
+            const newStyles = { ...(event.styles_json || {}), live_photos: newUrls };
+            await supabase.from('events').update({ styles_json: newStyles }).eq('id', event.id);
+
+            toast.success('¡Foto compartida en el muro! ✨');
+        } catch (e: any) {
+            toast.error('Error al subir foto');
+        } finally {
+            setGalleryLoading(false);
+        }
+    };
 
     const timeLeft = useCountdown(event?.event_date || '2099-01-01');
 
@@ -297,7 +331,23 @@ export default function InvitePage() {
 
                     <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 px-8 text-center text-white">
                         <span className="text-xs font-bold tracking-[0.4em] uppercase mb-4 opacity-70 animate-fade-in">{event.event_type}</span>
-                        <h1 className="text-[42px] leading-[1.1] font-bold mb-6 drop-shadow-2xl" style={{ fontFamily: `'${headerFont}', serif` }}>{event.title}</h1>
+                        <h1 className="text-[42px] leading-[1.1] font-bold mb-4 drop-shadow-2xl" style={{ fontFamily: `'${headerFont}', serif` }}>{event.title}</h1>
+
+                        {(event.parents_bride || event.parents_groom || event.godparents) && (
+                            <div className="flex flex-col gap-2 mb-8 opacity-90 animate-fade-in-up">
+                                {event.event_type === 'Boda' ? (
+                                    <>
+                                        {event.parents_bride && <p className="text-[10px] uppercase tracking-[0.3em] font-medium leading-loose">Con la bendición de nuestros padres:<br /><span className="text-sm font-bold opacity-100">{event.parents_bride}</span></p>}
+                                        {event.parents_groom && <p className="text-[10px] uppercase tracking-[0.3em] font-medium leading-loose mt-1"><span className="text-sm font-bold opacity-100">{event.parents_groom}</span></p>}
+                                    </>
+                                ) : (
+                                    <>
+                                        {event.parents_bride && <p className="text-[10px] uppercase tracking-[0.3em] font-medium leading-loose text-white/80">Padres:<br /><span className="text-sm font-bold text-white">{event.parents_bride}</span></p>}
+                                        {event.godparents && <p className="text-[10px] uppercase tracking-[0.3em] font-medium leading-loose mt-2 text-white/80">Padrinos:<br /><span className="text-sm font-bold text-white">{event.godparents}</span></p>}
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         {event.event_date && (
                             <div className="flex flex-col items-center gap-2 mb-8">
@@ -375,6 +425,44 @@ export default function InvitePage() {
                             <div className="text-3xl font-serif text-rose-200 absolute bottom-4 right-4 opacity-50 rotate-180">“</div>
                         </div>
                     )}
+
+                    {/* MURO SOCIAL / LIVE PHOTO GALLERY */}
+                    <div className="mb-20 px-4">
+                        <div className="text-center mb-8">
+                            <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] opacity-40 mb-2">Muro del Evento</h4>
+                            <p className="text-2xl font-bold" style={{ color: primary, fontFamily: `'${headerFont}', serif` }}>Comparte tus fotos</p>
+                            <p className="text-xs opacity-50 mt-1 max-w-[200px] mx-auto leading-relaxed">¡Sube tus mejores momentos de la fiesta y celebra con nosotros!</p>
+                        </div>
+
+                        <div className="flex flex-col gap-6">
+                            {/* Upload Button */}
+                            <label className="flex flex-col items-center justify-center gap-3 w-full py-10 rounded-3xl border-2 border-dashed transition-all hover:bg-white cursor-pointer group shadow-sm bg-white/50" style={{ borderColor: `${primary}33` }}>
+                                <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white shadow-md group-hover:scale-110 transition-transform">
+                                    {galleryLoading ? <Loader2 size={24} className="animate-spin" style={{ color: primary }} /> : <Camera size={24} style={{ color: primary }} />}
+                                </div>
+                                <span className="text-xs font-black uppercase tracking-widest" style={{ color: primary }}>Subir Foto</span>
+                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleLiveUpload(e.target.files[0])} disabled={galleryLoading} />
+                            </label>
+
+                            {/* Live Photo Grid */}
+                            {liveUrls.length > 0 && (
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <AnimatePresence>
+                                        {liveUrls.map((url, i) => (
+                                            <motion.div
+                                                key={url}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-black/5"
+                                            >
+                                                <img src={url} alt={`live-${i}`} className="w-full h-full object-cover" />
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
                     {/* GALLERY */}
                     {event.gallery_urls?.length > 0 && (

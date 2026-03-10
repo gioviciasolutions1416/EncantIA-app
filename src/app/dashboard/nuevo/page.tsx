@@ -5,19 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import {
-    LayoutDashboard,
-    PlusCircle,
-    User,
-    LogOut,
-    Loader2,
-    ArrowLeft,
-    CalendarDays,
-    MapPin,
-    Clock,
-    Tag,
-    Type,
-    CheckCircle2,
+    LayoutDashboard, PlusCircle, User, LogOut, Loader2, ArrowLeft, CalendarDays,
+    MapPin, Clock, Tag, Type, CheckCircle2, Sparkles, Lightbulb, Info
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function generateSlug(name: string, date: string): string {
@@ -236,140 +227,184 @@ export default function NuevoEventoPage() {
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
                 {/* ── HERO BANNER ──────────────────────────────────────────────── */}
                 <div
-                    className="relative overflow-hidden px-5 md:px-8 pt-6 pb-8"
+                    className="relative overflow-hidden px-5 md:px-8 pt-10 pb-12"
                     style={{ background: 'linear-gradient(135deg, #2d1b2d 0%, #7B2D8B 50%, #a35d6a 100%)' }}
                 >
-                    {/* Decorative circles */}
-                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10 bg-white" />
-                    <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 bg-white" />
-                    <div className="absolute top-4 right-24 w-16 h-16 rounded-full opacity-5 bg-white" />
+                    {/* Decorative elements */}
+                    <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-10 bg-white blur-3xl" />
+                    <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full opacity-10 bg-white blur-3xl" />
 
-                    <div className="relative flex items-center justify-between gap-4">
-                        <div className="flex flex-col gap-1">
+                    <div className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex flex-col gap-2 text-center md:text-left">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/80 text-[10px] font-black uppercase tracking-widest w-fit mx-auto md:mx-0">
+                                <Sparkles size={10} /> Nuevo Proyecto
+                            </span>
                             <h1
-                                className="text-2xl md:text-3xl font-black text-white"
+                                className="text-3xl md:text-4xl font-black text-white"
                                 style={{ fontFamily: "'Playfair Display', serif" }}
                             >
-                                Crear Evento
+                                Crea algo inolvidable
                             </h1>
-                            <p className="text-white/70 text-sm mt-1">
-                                Completa los datos básicos para empezar
+                            <p className="text-white/70 text-sm md:text-base max-w-md">
+                                Inicia tu viaje digital aquí. Diseña la invitación perfecta para tu gran día.
                             </p>
                         </div>
                         <Link
                             href="/dashboard"
-                            className="flex items-center gap-2 text-[#7B2D8B] bg-white px-4 py-2.5 rounded-full font-bold text-sm transition-all hover:scale-105 shadow-xl flex-shrink-0"
+                            className="flex items-center gap-2 text-[#7B2D8B] bg-white px-6 py-3 rounded-full font-black text-sm transition-all hover:scale-105 shadow-2xl active:scale-95 flex-shrink-0"
                         >
-                            <ArrowLeft size={14} />
-                            Volver
+                            <ArrowLeft size={16} />
+                            Volver al Dashboard
                         </Link>
                     </div>
                 </div>
 
-                <div className="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-10">
-                    <div
-                        className="bg-white rounded-3xl border p-8 shadow-sm"
-                        style={{ borderColor: '#f0dde3' }}
-                    >
-                        <h2
-                            className="text-2xl font-bold text-[#2d1b2d] mb-1"
-                            style={{ fontFamily: "'Playfair Display', serif" }}
+                <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 md:py-16">
+                    <div className="flex flex-col lg:flex-row gap-12">
+                        {/* Main Form Area */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="flex-1"
                         >
-                            Cuéntanos sobre tu evento
-                        </h2>
-                        <p className="text-sm text-[#7a5060] mb-8">
-                            Completa los datos básicos para crear tu invitación digital.
-                        </p>
+                            <div
+                                className="bg-white rounded-[2rem] border p-8 md:p-10 shadow-xl shadow-rose-100/50"
+                                style={{ borderColor: '#f0dde3' }}
+                            >
+                                <div className="mb-10">
+                                    <h2
+                                        className="text-3xl font-bold text-[#2d1b2d] mb-2"
+                                        style={{ fontFamily: "'Playfair Display', serif" }}
+                                    >
+                                        Detalles del Evento
+                                    </h2>
+                                    <p className="text-sm text-[#7a5060]/70">
+                                        Esta información será la base de tu invitación digital. Puedes editarla después.
+                                    </p>
+                                </div>
 
-                        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                            {/* Title */}
-                            <Field label="Nombre del evento" icon={<Type size={14} />} error={fieldErrors.title}>
-                                <input
-                                    type="text"
-                                    placeholder="Ej: Boda de Sofía y Roberto"
-                                    value={form.title}
-                                    onChange={(e) => handleChange('title', e.target.value)}
-                                    className={inputClass}
-                                    style={{ borderColor: fieldErrors.title ? '#f87171' : '#e8d0d7' }}
-                                />
-                            </Field>
+                                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                                    {/* Title */}
+                                    <Field label="Nombre del evento" icon={<Type size={14} />} error={fieldErrors.title}>
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: Boda de Sofía y Roberto"
+                                            value={form.title}
+                                            onChange={(e) => handleChange('title', e.target.value)}
+                                            className={inputClass}
+                                            style={{ borderColor: fieldErrors.title ? '#f87171' : '#e8d0d7' }}
+                                        />
+                                    </Field>
 
-                            {/* Type */}
-                            <Field label="Tipo de evento" icon={<Tag size={14} />} error={fieldErrors.event_type}>
-                                <select
-                                    value={form.event_type}
-                                    onChange={(e) => handleChange('event_type', e.target.value)}
-                                    className={inputClass}
-                                    style={{ borderColor: fieldErrors.event_type ? '#f87171' : '#e8d0d7' }}
-                                >
-                                    <option value="">Selecciona el tipo…</option>
-                                    {EVENT_TYPES.map((t) => (
-                                        <option key={t} value={t}>{t}</option>
+                                    {/* Type */}
+                                    <Field label="Tipo de evento" icon={<Tag size={14} />} error={fieldErrors.event_type}>
+                                        <select
+                                            value={form.event_type}
+                                            onChange={(e) => handleChange('event_type', e.target.value)}
+                                            className={inputClass}
+                                            style={{ borderColor: fieldErrors.event_type ? '#f87171' : '#e8d0d7' }}
+                                        >
+                                            <option value="">Selecciona el tipo…</option>
+                                            {EVENT_TYPES.map((t) => (
+                                                <option key={t} value={t}>{t}</option>
+                                            ))}
+                                        </select>
+                                    </Field>
+
+                                    {/* Date + Time */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Field label="Fecha" icon={<CalendarDays size={14} />} error={fieldErrors.event_date}>
+                                            <input
+                                                type="date"
+                                                value={form.event_date}
+                                                onChange={(e) => handleChange('event_date', e.target.value)}
+                                                className={inputClass}
+                                                style={{ borderColor: fieldErrors.event_date ? '#f87171' : '#e8d0d7' }}
+                                            />
+                                        </Field>
+                                        <Field label="Hora (opcional)" icon={<Clock size={14} />}>
+                                            <input
+                                                type="time"
+                                                value={form.event_time}
+                                                onChange={(e) => handleChange('event_time', e.target.value)}
+                                                className={inputClass}
+                                                style={{ borderColor: '#e8d0d7' }}
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    {/* Location */}
+                                    <Field label="Lugar" icon={<MapPin size={14} />} error={fieldErrors.location}>
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: Jardín Villa Toscana, Guadalajara"
+                                            value={form.location}
+                                            onChange={(e) => handleChange('location', e.target.value)}
+                                            className={inputClass}
+                                            style={{ borderColor: fieldErrors.location ? '#f87171' : '#e8d0d7' }}
+                                        />
+                                    </Field>
+
+                                    {/* Error */}
+                                    {error && (
+                                        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
+                                            ⚠️ {error}
+                                        </div>
+                                    )}
+
+                                    {/* Submit */}
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex items-center justify-center gap-3 w-full py-4 rounded-full text-white font-black text-base transition-all hover:scale-[1.02] active:scale-95 shadow-xl disabled:opacity-60 mt-4 h-14"
+                                        style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
+                                    >
+                                        {loading ? (
+                                            <Loader2 size={20} className="animate-spin" />
+                                        ) : (
+                                            <>Crear Invitación <ArrowLeft size={18} className="rotate-180" /></>
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+                        </motion.div>
+
+                        {/* Tips Sidebar */}
+                        <motion.aside
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="lg:w-80 flex flex-col gap-6"
+                        >
+                            <div className="bg-white rounded-[2rem] border p-6 md:p-8 shadow-sm" style={{ borderColor: '#f0dde3' }}>
+                                <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 mb-4">
+                                    <Lightbulb size={20} />
+                                </div>
+                                <h3 className="text-lg font-bold text-[#2d1b2d] mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>Recuerda que...</h3>
+                                <ul className="space-y-4">
+                                    {[
+                                        { text: "Puedes cambiar el diseño cuantas veces quieras en el editor." },
+                                        { text: "Tu evento es privado por defecto hasta que lo publiques." },
+                                        { text: "Agregaremos una ubicación interactiva automáticamente." }
+                                    ].map((tip, i) => (
+                                        <li key={i} className="flex gap-3 text-xs text-[#7a5060]/80 leading-relaxed font-medium">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#7B2D8B] mt-1.5 flex-shrink-0" />
+                                            {tip.text}
+                                        </li>
                                     ))}
-                                </select>
-                            </Field>
-
-                            {/* Date + Time */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="Fecha" icon={<CalendarDays size={14} />} error={fieldErrors.event_date}>
-                                    <input
-                                        type="date"
-                                        value={form.event_date}
-                                        onChange={(e) => handleChange('event_date', e.target.value)}
-                                        className={inputClass}
-                                        style={{ borderColor: fieldErrors.event_date ? '#f87171' : '#e8d0d7' }}
-                                    />
-                                </Field>
-                                <Field label="Hora (opcional)" icon={<Clock size={14} />}>
-                                    <input
-                                        type="time"
-                                        value={form.event_time}
-                                        onChange={(e) => handleChange('event_time', e.target.value)}
-                                        className={inputClass}
-                                        style={{ borderColor: '#e8d0d7' }}
-                                    />
-                                </Field>
+                                </ul>
                             </div>
 
-                            {/* Location */}
-                            <Field label="Lugar" icon={<MapPin size={14} />} error={fieldErrors.location}>
-                                <input
-                                    type="text"
-                                    placeholder="Ej: Jardín Villa Toscana, Guadalajara"
-                                    value={form.location}
-                                    onChange={(e) => handleChange('location', e.target.value)}
-                                    className={inputClass}
-                                    style={{ borderColor: fieldErrors.location ? '#f87171' : '#e8d0d7' }}
-                                />
-                            </Field>
-
-                            {/* Error */}
-                            {error && (
-                                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
-                                    ⚠️ {error}
-                                </div>
-                            )}
-
-                            {/* Submit */}
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="flex items-center justify-center gap-3 w-full py-4 rounded-full text-white font-bold text-sm transition-all hover:opacity-90 disabled:opacity-60 shadow-lg mt-2"
-                                style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 size={16} className="animate-spin" />
-                                        Creando evento…
-                                    </>
-                                ) : (
-                                    <>
-                                        <PlusCircle size={16} />
-                                        Crear evento y abrir editor
-                                    </>
-                                )}
-                            </button>
-                        </form>
+                            <div className="bg-[#7B2D8B]/5 rounded-[2rem] p-6 md:p-8 border border-[#7B2D8B]/10">
+                                <h3 className="text-sm font-bold text-[#7B2D8B] mb-2">¿Necesitas ayuda?</h3>
+                                <p className="text-[11px] text-[#2d1b2d]/60 leading-relaxed mb-4">
+                                    Estamos aquí para que tu evento sea perfecto. Escríbenos si tienes dudas.
+                                </p>
+                                <button className="text-[11px] font-black text-[#7B2D8B] hover:underline flex items-center gap-1">
+                                    Contactar soporte <ArrowLeft size={10} className="rotate-180" />
+                                </button>
+                            </div>
+                        </motion.aside>
                     </div>
                 </div>
             </main>

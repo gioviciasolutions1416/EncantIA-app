@@ -5,18 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import {
-    User,
-    Mail,
-    Shield,
-    CreditCard,
-    LogOut,
-    ArrowLeft,
-    Loader2,
-    CheckCircle2,
-    Calendar,
-    LayoutDashboard,
-    PlusCircle
+    User, Mail, Shield, CreditCard, LogOut, ArrowLeft, Loader2, CheckCircle2,
+    Calendar, LayoutDashboard, PlusCircle, Sparkles, Settings
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
 interface UserProfile {
@@ -116,120 +108,141 @@ export default function AccountPage() {
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
                 {/* ── HERO BANNER ──────────────────────────────────────────────── */}
                 <div
-                    className="relative overflow-hidden px-5 md:px-8 pt-6 pb-8"
+                    className="relative overflow-hidden px-5 md:px-8 pt-10 pb-12"
                     style={{ background: 'linear-gradient(135deg, #2d1b2d 0%, #7B2D8B 50%, #a35d6a 100%)' }}
                 >
-                    {/* Decorative circles */}
-                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10 bg-white" />
-                    <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 bg-white" />
-                    <div className="absolute top-4 right-24 w-16 h-16 rounded-full opacity-5 bg-white" />
+                    {/* Decorative elements */}
+                    <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-10 bg-white blur-3xl" />
+                    <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full opacity-10 bg-white blur-3xl" />
 
-                    <div className="relative flex items-center justify-between gap-4">
-                        <div className="flex flex-col gap-1">
-                            <p className="text-white/60 text-xs font-medium uppercase tracking-widest">Ajustes</p>
+                    <div className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex flex-col gap-2 text-center md:text-left">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/80 text-[10px] font-black uppercase tracking-widest w-fit mx-auto md:mx-0">
+                                <Settings size={10} /> Panel de Usuario
+                            </span>
                             <h1
-                                className="text-2xl md:text-3xl font-black text-white"
+                                className="text-3xl md:text-4xl font-black text-white"
                                 style={{ fontFamily: "'Playfair Display', serif" }}
                             >
-                                Mi Cuenta
+                                Mi Perfil
                             </h1>
-                            <p className="text-white/70 text-sm mt-1">
-                                Gestiona tus datos personales y suscripción
+                            <p className="text-white/70 text-sm md:text-base max-w-md">
+                                Revisa tu información, gestiona tu plan y mantén tu cuenta segura.
                             </p>
                         </div>
                         <Link
                             href="/dashboard"
-                            className="flex items-center gap-2 text-[#7B2D8B] bg-white px-5 py-3 rounded-full font-black text-sm transition-all hover:scale-105 shadow-xl flex-shrink-0"
+                            className="flex items-center gap-2 text-[#7B2D8B] bg-white px-6 py-3 rounded-full font-black text-sm transition-all hover:scale-105 shadow-2xl active:scale-95 flex-shrink-0"
                         >
                             <ArrowLeft size={16} />
-                            Volver
+                            Volver al Dashboard
                         </Link>
                     </div>
                 </div>
 
-                <div className="max-w-2xl mx-auto px-4 md:px-8 py-8 md:py-12">
-                    <div className="grid gap-6">
-                        {/* Profile Info */}
-                        <section className="bg-white rounded-3xl border border-[#f0dde3] overflow-hidden shadow-sm">
-                            <div className="px-8 py-6 border-b border-[#f0dde3] bg-gray-50/50 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-16">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Profile Main Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="lg:col-span-1"
+                        >
+                            <div className="bg-white rounded-[2rem] border p-8 flex flex-col items-center text-center shadow-xl shadow-rose-100/30 overflow-hidden relative" style={{ borderColor: '#f0dde3' }}>
+                                {/* Decorative background */}
+                                <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-br from-rose-50 to-purple-50" />
+
+                                <div className="relative mt-4 mb-6">
+                                    <div className="w-24 h-24 rounded-[2rem] bg-white p-1.5 shadow-xl rotate-3">
+                                        <div className="w-full h-full rounded-[1.6rem] flex items-center justify-center text-white text-3xl font-black shadow-inner -rotate-3" style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}>
+                                            {(user.user_metadata?.full_name || user.email || 'U')[0].toUpperCase()}
+                                        </div>
+                                    </div>
+                                    <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white p-1 shadow-lg">
+                                        <div className="w-full h-full rounded-full bg-green-500 border-2 border-white" />
+                                    </div>
+                                </div>
+
+                                <h2 className="text-xl font-black text-[#2d1b2d] break-all leading-tight">
+                                    {user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario'}
+                                </h2>
+                                <p className="text-xs font-medium text-[#7a5060] mt-1 opacity-60">Cliente Premium</p>
+
+                                <div className="grid grid-cols-2 gap-4 w-full mt-8 border-t pt-8" style={{ borderColor: '#f9f0f3' }}>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-black text-[#7B2D8B]">{eventCount}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Eventos</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-black text-[#a35d6a]">1</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Suscripción</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Settings Sections */}
+                        <div className="lg:col-span-2 flex flex-col gap-6">
+                            {/* Personal Info */}
+                            <motion.section
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="bg-white rounded-[2rem] border p-8 md:p-10 shadow-sm"
+                                style={{ borderColor: '#f0dde3' }}
+                            >
+                                <div className="flex items-center gap-3 mb-8">
+                                    <div className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-[#a35d6a]">
                                         <User size={20} />
                                     </div>
-                                    <h2 className="font-bold text-[#2d1b2d]">Datos Personales</h2>
+                                    <h3 className="text-xl font-bold text-[#2d1b2d]" style={{ fontFamily: "'Playfair Display', serif" }}>Información Personal</h3>
                                 </div>
-                                <button className="text-xs font-bold text-[#a35d6a] hover:underline" onClick={() => toast.info('Función de edición próxima')}>Editar</button>
-                            </div>
-                            <div className="p-8 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">Nombre Completo</label>
-                                        <p className="text-sm font-semibold text-[#2d1b2d]">{user.user_metadata?.full_name || user.user_metadata?.name || 'No especificado'}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">Correo Electrónico</label>
-                                        <p className="text-sm font-semibold text-[#2d1b2d] flex items-center gap-2">
-                                            {user.email}
-                                            <CheckCircle2 size={14} className="text-green-500" />
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
 
-                        {/* Plan / Subscription */}
-                        <section className="bg-white rounded-3xl border border-[#f0dde3] overflow-hidden shadow-sm">
-                            <div className="px-8 py-6 border-b border-[#f0dde3] bg-gray-50/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                                        <CreditCard size={20} />
+                                <div className="space-y-6">
+                                    <div className="flex flex-col gap-1.5 border-b pb-4" style={{ borderColor: '#f9f0f3' }}>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nombre Completo</p>
+                                        <p className="text-sm font-semibold text-[#2d1b2d]">{user.user_metadata?.full_name || user.user_metadata?.name || '—'}</p>
                                     </div>
-                                    <h2 className="font-bold text-[#2d1b2d]">Plan Actual</h2>
-                                </div>
-                            </div>
-                            <div className="p-8">
-                                <div className="flex items-center justify-between p-4 md:p-6 rounded-2xl border-2 border-dashed border-purple-100 bg-purple-50/20">
-                                    <div className="min-w-0">
-                                        <p className="text-sm md:text-base font-bold text-purple-700 truncate">Plan Gratuito (Básico)</p>
-                                        <p className="text-xs text-purple-500/80">Vigente indefinidamente</p>
-                                    </div>
-                                    <Link href="/planes" className="px-5 md:px-6 py-2 md:py-2.5 rounded-full bg-purple-600 text-white text-[10px] md:text-xs font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all flex-shrink-0">
-                                        Mejorar Plan
-                                    </Link>
-                                </div>
-                                <div className="mt-8 flex items-center justify-around text-center">
-                                    <div>
-                                        <p className="text-2xl md:text-3xl font-black text-[#2d1b2d]">{eventCount}</p>
-                                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Eventos</p>
-                                    </div>
-                                    <div className="w-px h-10 bg-gray-100" />
-                                    <div>
-                                        <p className="text-2xl md:text-3xl font-black text-[#2d1b2d]">Ilimitado</p>
-                                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Invitados</p>
+                                    <div className="flex flex-col gap-1.5 border-b pb-4" style={{ borderColor: '#f9f0f3' }}>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Correo Electrónico</p>
+                                        <p className="text-sm font-semibold text-[#2d1b2d]">{user.email}</p>
                                     </div>
                                 </div>
-                            </div>
-                        </section>
+                            </motion.section>
 
-                        {/* Security */}
-                        <section className="bg-white rounded-3xl border border-[#f0dde3] overflow-hidden shadow-sm mb-6">
-                            <div className="px-8 py-6 border-b border-[#f0dde3] bg-gray-50/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                        <Shield size={20} />
+                            {/* Plan & Security */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                            >
+                                {/* Plan Card */}
+                                <div className="bg-white rounded-[2rem] border p-8 shadow-sm flex flex-col justify-between" style={{ borderColor: '#f0dde3' }}>
+                                    <div>
+                                        <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-[#7B2D8B] mb-6">
+                                            <CreditCard size={20} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-[#2d1b2d] mb-1">Plan Actual</h3>
+                                        <p className="text-2xl font-black text-[#7B2D8B]">Gratis</p>
+                                        <p className="text-xs text-[#7a5060]/60 mt-2 leading-relaxed">Limitado a 1 evento activo. Obtén más con Premium.</p>
                                     </div>
-                                    <h2 className="font-bold text-[#2d1b2d]">Seguridad</h2>
+                                    <button className="w-full mt-6 py-3 rounded-full bg-[#2d1b2d] text-white text-xs font-black shadow-lg hover:scale-105 transition-all">Mejorar Plan</button>
                                 </div>
-                            </div>
-                            <div className="p-8">
-                                <button className="flex items-center gap-3 px-6 py-3 rounded-xl border-2 border-gray-100 font-bold text-xs text-[#2d1b2d] hover:bg-gray-50 transition-all">
-                                    Cambiar Contraseña
-                                </button>
-                                <p className="text-[10px] text-gray-400 mt-4 leading-relaxed italic">
-                                    EncantIA utiliza Supabase Auth para garantizar que tus datos estén siempre protegidos bajo estándares de seguridad bancaria.
-                                </p>
-                            </div>
-                        </section>
+
+                                {/* Security Card */}
+                                <div className="bg-white rounded-[2rem] border p-8 shadow-sm flex flex-col justify-between" style={{ borderColor: '#f0dde3' }}>
+                                    <div>
+                                        <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 mb-6">
+                                            <Shield size={20} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-[#2d1b2d] mb-1">Seguridad</h3>
+                                        <p className="text-xs text-[#7a5060]/60 mt-1 leading-relaxed">Tu cuenta está protegida con autenticación de Supabase.</p>
+                                    </div>
+                                    <button className="w-full mt-6 py-3 rounded-full border border-gray-200 text-[#2d1b2d] text-xs font-black hover:bg-gray-50 transition-all">Cambiar Clave</button>
+                                </div>
+                            </motion.div>
+                        </div>
                     </div>
                 </div>
             </main>
