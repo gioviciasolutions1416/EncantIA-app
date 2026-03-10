@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, Check, X, Sparkles, Layout, Palette, CreditCard, Send, Menu, X as CloseIcon, MapPin, Heart, Clock } from "lucide-react";
+import { ChevronDown, Check, X, Sparkles, Layout, Palette, CreditCard, Send, Menu, MapPin, Heart, Clock } from "lucide-react";
 
 /** 
  * GIOVIS LANDING PAGE - ESPECTACULAR VERSION
@@ -76,7 +76,7 @@ export default function Home() {
 
           {/* Mobile Menu Button */}
           <button className="md:hidden p-2 text-[#a35d6a]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <CloseIcon size={28} /> : <Menu size={28} />}
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
@@ -480,7 +480,8 @@ export default function Home() {
       </footer>
 
       {/* GLOBAL CUSTOM STYLES */}
-      < style jsx global > {`
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fade-in {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -534,9 +535,9 @@ export default function Home() {
           animation: shimmer 4s linear infinite;
           display: inline-block;
         }
-      `}</style >
+      `}} />
 
-    </div >
+    </div>
   );
 }
 
