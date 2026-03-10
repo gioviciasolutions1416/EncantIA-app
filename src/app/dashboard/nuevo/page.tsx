@@ -246,12 +246,11 @@ export default function NuevoEventoPage() {
 
                     <div className="relative flex items-center justify-between gap-4">
                         <div className="flex flex-col gap-1">
-                            <p className="text-white/60 text-xs font-medium uppercase tracking-widest">Nueva invitación</p>
                             <h1
                                 className="text-2xl md:text-3xl font-black text-white"
                                 style={{ fontFamily: "'Playfair Display', serif" }}
                             >
-                                Crear Evento ✨
+                                Crear Evento
                             </h1>
                             <p className="text-white/70 text-sm mt-1">
                                 Completa los datos básicos para empezar
