@@ -234,24 +234,37 @@ export default function NuevoEventoPage() {
 
             {/* Main */}
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+                {/* ── HERO BANNER ──────────────────────────────────────────────── */}
                 <div
-                    className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b px-4 md:px-8 py-3 md:py-4 flex items-center gap-3"
-                    style={{ borderColor: '#f0dde3' }}
+                    className="relative overflow-hidden px-5 md:px-8 pt-6 pb-8"
+                    style={{ background: 'linear-gradient(135deg, #2d1b2d 0%, #7B2D8B 50%, #a35d6a 100%)' }}
                 >
-                    <Link
-                        href="/dashboard"
-                        className="flex items-center gap-2 text-sm text-[#7a5060] hover:text-[#a35d6a] transition-colors flex-shrink-0"
-                    >
-                        <ArrowLeft size={16} />
-                        <span className="hidden sm:inline">Mis eventos</span>
-                    </Link>
-                    <span className="text-[#e8d0d7]">/</span>
-                    <h1
-                        className="text-base md:text-xl font-bold text-[#2d1b2d] truncate"
-                        style={{ fontFamily: "'Playfair Display', serif" }}
-                    >
-                        Nuevo Evento
-                    </h1>
+                    {/* Decorative circles */}
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10 bg-white" />
+                    <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 bg-white" />
+                    <div className="absolute top-4 right-24 w-16 h-16 rounded-full opacity-5 bg-white" />
+
+                    <div className="relative flex items-center justify-between gap-4">
+                        <div className="flex flex-col gap-1">
+                            <p className="text-white/60 text-xs font-medium uppercase tracking-widest">Nueva invitación</p>
+                            <h1
+                                className="text-2xl md:text-3xl font-black text-white"
+                                style={{ fontFamily: "'Playfair Display', serif" }}
+                            >
+                                Crear Evento ✨
+                            </h1>
+                            <p className="text-white/70 text-sm mt-1">
+                                Completa los datos básicos para empezar
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard"
+                            className="flex items-center gap-2 text-[#7B2D8B] bg-white px-4 py-2.5 rounded-full font-bold text-sm transition-all hover:scale-105 shadow-xl flex-shrink-0"
+                        >
+                            <ArrowLeft size={14} />
+                            Volver
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-10">

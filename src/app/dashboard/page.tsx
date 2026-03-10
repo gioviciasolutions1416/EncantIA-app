@@ -338,8 +338,7 @@ export default function DashboardPage() {
                             className="flex items-center gap-2 text-[#7B2D8B] bg-white px-5 py-3 rounded-full font-black text-sm transition-all hover:scale-105 shadow-xl flex-shrink-0"
                         >
                             <PlusCircle size={16} />
-                            <span className="hidden sm:inline">Crear</span>
-                            <span className="sm:hidden">+</span>
+                            Crear
                         </Link>
                     </div>
                 </div>
