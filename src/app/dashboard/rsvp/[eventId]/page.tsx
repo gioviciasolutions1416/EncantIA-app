@@ -9,7 +9,7 @@ import {
     ArrowLeft, Search, Plus, Download, Copy, CheckCircle2,
     Loader2, X, ChevronDown, Users, UserCheck, Clock, UserX,
     LayoutDashboard, PlusCircle, User, LogOut, Eye, MessageCircle,
-    Trash2, CheckSquare, Square, MoreHorizontal,
+    Trash2, CheckSquare, Square, MoreHorizontal, ShieldCheck, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,12 +22,17 @@ interface Guest {
     invitation_token: string;
     created_at: string;
     event_id: string;
+    is_group: boolean;
+    members_json: string[]; // List of names in the family/group
     rsvp: {
         status: 'confirmed' | 'declined' | 'pending';
         companions: number;
         dietary_restrictions: string;
         message: string;
         responded_at: string | null;
+        confirmed_members_json: string[]; // Subset of members_json that actually confirmed
+        is_checked_in: boolean;
+        checked_in_at: string | null;
     } | null;
 }
 
@@ -42,6 +47,7 @@ const STATUS_CONFIG = {
     confirmed: { label: 'Confirmado', bg: '#d1fae5', color: '#065f46', dot: '#10b981' },
     declined: { label: 'Declinó', bg: '#fee2e2', color: '#991b1b', dot: '#ef4444' },
     pending: { label: 'Pendiente', bg: '#fef3c7', color: '#92400e', dot: '#f59e0b' },
+    checked_in: { label: 'En el Evento', bg: '#eff6ff', color: '#1e40af', dot: '#3b82f6' },
 };
 
 function StatusChip({ status }: { status: keyof typeof STATUS_CONFIG }) {
@@ -109,7 +115,7 @@ export default function RSVPDashboard() {
     const [filter, setFilter] = useState<'all' | 'confirmed' | 'declined' | 'pending'>('all');
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
-    const [addForm, setAddForm] = useState({ name: '', phone: '', email: '' });
+    const [addForm, setAddForm] = useState({ name: '', phone: '', email: '', is_group: false, members: [] as string[] });
     const [addLoading, setAddLoading] = useState(false);
     const [generatedLink, setGeneratedLink] = useState<string | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
@@ -121,7 +127,7 @@ export default function RSVPDashboard() {
     const fetchGuests = useCallback(async () => {
         const { data } = await supabase
             .from('guests')
-            .select(`*, rsvp(status, companions, dietary_restrictions, message, responded_at)`)
+            .select(`*, rsvp(status, companions, dietary_restrictions, message, responded_at, is_checked_in, checked_in_at, confirmed_members_json)`)
             .eq('event_id', eventId)
             .order('created_at', { ascending: false });
 
@@ -189,16 +195,25 @@ export default function RSVPDashboard() {
 
         const { data, error } = await supabase
             .from('guests')
-            .insert({ event_id: eventId, name: addForm.name.trim(), phone: addForm.phone || null, email: addForm.email || null })
+            .insert({
+                event_id: eventId,
+                name: addForm.name.trim(),
+                phone: addForm.phone || null,
+                email: addForm.email || null,
+                is_group: addForm.is_group,
+                members_json: addForm.members
+            })
             .select()
             .single();
 
         if (!error && data) {
             const link = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${event?.slug}?token=${data.invitation_token}`;
             setGeneratedLink(link);
-            setAddForm({ name: '', phone: '', email: '' });
+            setAddForm({ name: '', phone: '', email: '', is_group: false, members: [] });
             await fetchGuests();
             toast.success('¡Invitado agregado!');
+        } else if (error) {
+            toast.error('Error al agregar invitado');
         }
         setAddLoading(false);
     };
@@ -235,7 +250,7 @@ export default function RSVPDashboard() {
 
     const shareWhatsApp = (g: Guest) => {
         const link = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${event?.slug}?token=${g.invitation_token}`;
-        const text = encodeURIComponent(`🌟 *¡HOLA ${g.name.toUpperCase()}!* 🌟\n\nNos encantaría que nos acompañes en nuestro gran día. ❤️\n\nTe compartimos tu *invitación digital personalizada* aquí:\n🔗 ${link}\n\n¡Esperamos verte ahí y celebrar juntos! ✨`);
+        const text = encodeURIComponent(`🌟 *¡HOLA ${g.name.toUpperCase()}!* 🌟\n\nNos encantaría que nos acompañes en nuestro gran día. ❤️\n\nTe compartimos tu *invitación digital personalizada* con todos los detalles y el pase de entrada aquí:\n\n🔗 ${link}\n\n*¡Por favor, no olvides confirmar tu asistencia en el link!* ✨`);
         window.open(`https://wa.me/?text=${text}`, '_blank');
     };
 
@@ -533,7 +548,7 @@ export default function RSVPDashboard() {
                                                     : <Square size={16} className="text-gray-300" />}
                                             </button>
                                         </th>
-                                        {['Nombre', 'Estado', 'Acompañantes', 'Restricciones', 'Mensaje', 'Respondió', 'Acciones'].map(h => (
+                                        {['Nombre', 'Estado', 'Ingreso', 'Acompañantes', 'Restricciones', 'Mensaje', 'Respondió', 'Acciones'].map(h => (
                                             <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                                         ))}
                                     </tr>
@@ -578,6 +593,20 @@ export default function RSVPDashboard() {
                                                         </td>
                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                             <StatusChip status={status as keyof typeof STATUS_CONFIG} />
+                                                        </td>
+                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                            {g.rsvp?.is_checked_in ? (
+                                                                <div className="flex flex-col">
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-tighter w-fit">
+                                                                        <ShieldCheck size={10} /> Recibido
+                                                                    </span>
+                                                                    <span className="text-[9px] text-gray-400 mt-0.5 ml-1">
+                                                                        {g.rsvp.checked_in_at ? new Date(g.rsvp.checked_in_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-300 text-xs">—</span>
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-3 text-center text-gray-500">{g.rsvp?.companions ?? '—'}</td>
                                                         <td className="px-4 py-3 text-gray-500 max-w-[150px] truncate">{g.rsvp?.dietary_restrictions || '—'}</td>
@@ -715,38 +744,61 @@ export default function RSVPDashboard() {
                         </div>
 
                         {generatedLink ? (
-                            <div className="px-6 py-6 flex flex-col gap-4">
-                                <div className="text-center">
-                                    <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <CheckCircle2 size={28} className="text-green-600" />
-                                    </div>
-                                    <h4 className="font-bold text-[#2d1b2d] mb-1">¡Invitado agregado!</h4>
-                                    <p className="text-sm text-gray-500">Comparte este link personalizado:</p>
+                            <div className="px-8 py-10 flex flex-col items-center gap-6 animate-scale-in text-center">
+                                <div className="w-16 h-16 rounded-3xl bg-green-50 flex items-center justify-center text-green-500 mb-2 shadow-lg shadow-green-100 rotate-6">
+                                    <CheckCircle2 size={32} />
                                 </div>
-                                <div className="bg-gray-50 rounded-xl px-4 py-3 border flex items-center gap-2" style={{ borderColor: '#e8d0d7' }}>
-                                    <p className="text-xs text-gray-600 flex-1 break-all">{generatedLink}</p>
+
+                                <div className="flex flex-col gap-1">
+                                    <h3 className="text-xl font-black text-[#2d1b2d] leading-tight">¡Invitación Lista! ✨</h3>
+                                    <p className="text-xs text-gray-400 font-medium tracking-tight">Copia el link o envíalo directamente por WhatsApp.</p>
+                                </div>
+
+                                <div className="w-full bg-rose-50/50 rounded-[32px] p-6 border border-rose-100 flex flex-col gap-4 relative overflow-hidden group">
+                                    <div className="absolute -top-4 -right-4 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                                        <QrCode size={100} />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5 items-center relative z-10">
+                                        <div className="px-3 py-1 bg-white rounded-full text-[10px] font-black uppercase tracking-widest text-[#a35d6a] border border-rose-100 shadow-sm">
+                                            {addForm.is_group ? 'Invitación Grupal' : 'Pase Individual'}
+                                        </div>
+                                        <p className="font-bold text-gray-400 text-[10px] break-all max-w-[200px] line-clamp-1 opacity-60">{generatedLink}</p>
+                                    </div>
+
                                     <button
                                         onClick={() => copyToClipboard(generatedLink, 'new')}
-                                        className="flex-shrink-0 p-2 rounded-lg text-[#a35d6a] hover:bg-rose-50 transition-colors"
+                                        className="w-full py-4 rounded-2xl bg-white border border-[#e8d0d7] text-[#a35d6a] text-sm font-black flex items-center justify-center gap-2 hover:bg-rose-50 transition-all active:scale-95 shadow-sm"
                                     >
-                                        {copied === 'new' ? <CheckCircle2 size={16} className="text-green-500" /> : <Copy size={16} />}
+                                        {copied === 'new' ? <><CheckCircle2 size={16} className="text-green-500" /> ¡Copiado!</> : <><Copy size={16} /> Copiar Link</>}
                                     </button>
                                 </div>
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setGeneratedLink(null)}
-                                        className="flex-1 py-3 rounded-xl border text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
-                                        style={{ borderColor: '#e8d0d7' }}
+
+                                <div className="flex flex-col gap-3 w-full">
+                                    <a
+                                        href={`https://wa.me/?text=${encodeURIComponent(`🌟 *¡HOLA!* 🌟\n\nNos encantaría que nos acompañes en nuestro gran día. ❤️\n\nTe compartimos tu *invitación digital personalizada* con todos los detalles y el pase de entrada aquí:\n\n🔗 ${generatedLink}\n\n*¡Por favor, no olvides confirmar tu asistencia en el link!* ✨`)}`}
+                                        target="_blank"
+                                        className="w-full py-4 rounded-2xl text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2.5 transition-all active:scale-95 hover:brightness-110"
+                                        style={{ background: '#25D366' }}
                                     >
-                                        Agregar otro
-                                    </button>
-                                    <button
-                                        onClick={() => { setShowAddModal(false); setGeneratedLink(null); }}
-                                        className="flex-1 py-3 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90"
-                                        style={{ background: 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}
-                                    >
-                                        Listo
-                                    </button>
+                                        <MessageCircle size={18} fill="currentColor" /> Compartir en WhatsApp
+                                    </a>
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setGeneratedLink(null)}
+                                            className="flex-1 py-3 rounded-xl border-2 border-dashed text-xs font-bold text-[#a35d6a] hover:bg-rose-50 transition-all"
+                                            style={{ borderColor: '#e8d0d7' }}
+                                        >
+                                            Agregar otro
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowAddModal(false); setGeneratedLink(null); }}
+                                            className="flex-1 py-3 rounded-xl text-gray-400 text-xs font-bold hover:bg-gray-50 transition-all underline decoration-rose-100"
+                                        >
+                                            Listo
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -761,7 +813,7 @@ export default function RSVPDashboard() {
                                         <input
                                             type={field === 'email' ? 'email' : 'text'}
                                             placeholder={placeholder}
-                                            value={addForm[field as keyof typeof addForm]}
+                                            value={(addForm as any)[field]}
                                             onChange={e => setAddForm(p => ({ ...p, [field]: e.target.value }))}
                                             required={required}
                                             className="w-full px-4 py-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-[#a35d6a]/20 focus:border-[#a35d6a] transition-all"
@@ -769,6 +821,59 @@ export default function RSVPDashboard() {
                                         />
                                     </div>
                                 ))}
+
+                                {/* Group Toggle */}
+                                <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100 flex items-center justify-between">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-xs font-bold text-[#2d1b2d]">Invitación Familiar / Grupo</span>
+                                        <span className="text-[10px] text-gray-500">Permite confirmar por integrante.</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddForm(p => ({ ...p, is_group: !p.is_group }))}
+                                        className={`w-10 h-5 rounded-full transition-all relative ${addForm.is_group ? 'bg-[#a35d6a]' : 'bg-gray-200'}`}
+                                    >
+                                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${addForm.is_group ? 'left-5.5' : 'left-0.5'}`} />
+                                    </button>
+                                </div>
+
+                                {addForm.is_group && (
+                                    <div className="flex flex-col gap-3 animate-fade-in">
+                                        <label className="text-xs font-bold text-gray-500">Integrantes de la familia</label>
+                                        <div className="flex flex-col gap-2">
+                                            {addForm.members.map((m, i) => (
+                                                <div key={i} className="flex gap-2">
+                                                    <input
+                                                        value={m}
+                                                        onChange={e => {
+                                                            const n = [...addForm.members];
+                                                            n[i] = e.target.value;
+                                                            setAddForm(p => ({ ...p, members: n }));
+                                                        }}
+                                                        className="flex-1 px-4 py-2 rounded-lg border text-sm outline-none bg-white"
+                                                        style={{ borderColor: '#e8d0d7' }}
+                                                        placeholder={`Nombre ${i + 1}`}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAddForm(p => ({ ...p, members: p.members.filter((_, idx) => idx !== i) }))}
+                                                        className="p-2 text-rose-300 hover:text-rose-500"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => setAddForm(p => ({ ...p, members: [...p.members, ''] }))}
+                                                className="py-2.5 rounded-xl border-2 border-dashed text-xs font-bold text-[#a35d6a] hover:bg-rose-50 transition-all"
+                                                style={{ borderColor: '#e8d0d7' }}
+                                            >
+                                                + Agregar integrante
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="flex gap-3 mt-1">
                                     <button
                                         type="button"

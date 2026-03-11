@@ -318,16 +318,34 @@ export default function Home() {
             <p className="text-dark/40 text-[15px] font-medium">Pago único. Sin suscripciones sorpresas.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
-            {/* Basico */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-[1300px] mx-auto items-stretch">
+            {/* Prueba */}
             <div className="reveal-on-scroll transform transition-all duration-1000 ease-out translate-y-12 opacity-0 p-6 md:p-7 rounded-[32px] glass hover:bg-white/40 border border-white/50 shadow-xl hover:shadow-2xl group flex flex-col hover:-translate-y-2">
-              <h3 className="text-xl font-playfair font-bold mb-1 text-dark">Básico</h3>
+              <h3 className="text-xl font-playfair font-bold mb-1 text-dark">Prueba</h3>
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-3xl lg:text-4xl font-bold text-dark">Gratis</span>
+              </div>
+              <ul className="space-y-2.5 mb-6 flex-grow">
+                {["Borrador (No publicable)", "Personalización completa", "1 invitación digital (Demo)", "1 tema de IA incluido", "Mapa con GPS", "Mesa de regalos"].map((f, i) => (
+                  <li key={i} className="flex gap-2.5 text-[13px] text-dark/70 font-medium leading-tight">
+                    <Check size={16} className="text-green-500 flex-shrink-0 mt-0.5" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/login" className="w-full py-3 border-2 border-[#a35d6a]/20 text-[#a35d6a] font-bold rounded-xl text-center text-[13px] group-hover:bg-[#a35d6a] group-hover:text-white transition-all">
+                Probar gratis
+              </Link>
+            </div>
+
+            {/* Plata */}
+            <div className="reveal-on-scroll transform transition-all duration-1000 ease-out translate-y-12 opacity-0 delay-100 p-6 md:p-7 rounded-[32px] glass hover:bg-white/40 border border-white/50 shadow-xl hover:shadow-2xl group flex flex-col hover:-translate-y-2">
+              <h3 className="text-xl font-playfair font-bold mb-1 text-dark">Plata</h3>
               <div className="flex items-baseline gap-2 mb-4">
                 <span className="text-3xl lg:text-4xl font-bold text-dark">$299</span>
                 <span className="text-dark/30 text-xs font-bold uppercase tracking-widest">MXN</span>
               </div>
               <ul className="space-y-2.5 mb-6 flex-grow">
-                {["Personalización completa", "1 invitación digital", "1 tema de IA incluido", "Mapa con GPS", "Mesa de regalos", "Soporte por email"].map((f, i) => (
+                {["Publicación habilitada", "Todo lo de Prueba, más:", "Creación temas con IA", "Sistema de edición", "Imagen de portada", "Mensaje invitación", "Calendario & Hospedaje", "Código de vestimenta"].map((f, i) => (
                   <li key={i} className="flex gap-2.5 text-[13px] text-dark/70 font-medium leading-tight">
                     <Check size={16} className="text-green-500 flex-shrink-0 mt-0.5" /> {f}
                   </li>
@@ -338,18 +356,18 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* RSVP */}
-            <div className="reveal-on-scroll transform transition-all duration-1000 ease-out translate-y-12 opacity-0 delay-100 p-6 md:p-7 rounded-[32px] glass bg-white/80 border-2 border-[#a35d6a]/30 shadow-2xl relative lg:scale-[1.03] z-10 flex flex-col hover:-translate-y-3">
+            {/* Oro */}
+            <div className="reveal-on-scroll transform transition-all duration-1000 ease-out translate-y-12 opacity-0 delay-150 p-6 md:p-7 rounded-[32px] glass bg-white/80 border-2 border-[#a35d6a]/30 shadow-2xl relative lg:scale-[1.03] z-10 flex flex-col hover:-translate-y-3">
               <div className="absolute top-0 right-8 -translate-y-1/2 bg-[#a35d6a] text-white text-[9px] font-bold px-3 py-1 rounded-full tracking-[0.15em] uppercase shadow-lg whitespace-nowrap">
                 MÁS POPULAR 🌸
               </div>
-              <h3 className="text-xl font-playfair font-bold mb-1 text-[#a35d6a]">RSVP Plus</h3>
+              <h3 className="text-xl font-playfair font-bold mb-1 text-[#a35d6a]">Oro</h3>
               <div className="flex items-baseline gap-2 mb-4">
                 <span className="text-3xl lg:text-4xl font-bold text-[#a35d6a]">$499</span>
                 <span className="text-[#a35d6a]/40 text-xs font-bold uppercase tracking-widest">MXN</span>
               </div>
               <ul className="space-y-2.5 mb-6 flex-grow">
-                {["Todo lo del plan Básico", "3 temas de IA premium", "Confirmaciones en tiempo real", "Mesa de regalos integrada", "Música de fondo ilimitada", "WhatsApp RSVP directo", "Soporte prioritario"].map((f, i) => (
+                {["Todo lo de Plata, más:", "Cuenta regresiva", "Canción (Música)", "Eventos múltiples", "1 imagen por evento", "Hasta 6 fotos de galería", "Itinerario detallado"].map((f, i) => (
                   <li key={i} className="flex gap-2.5 text-[13px] font-bold text-[#2d1b2d] leading-tight">
                     <Check size={16} className="text-[#a35d6a] flex-shrink-0 mt-0.5" /> {f}
                   </li>
@@ -360,15 +378,15 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Premium */}
+            {/* Diamante */}
             <div className="reveal-on-scroll transform transition-all duration-1000 ease-out translate-y-12 opacity-0 delay-200 p-6 md:p-7 rounded-[32px] glass hover:bg-white/40 border border-white/50 shadow-xl hover:shadow-2xl group flex flex-col hover:-translate-y-2">
-              <h3 className="text-xl font-playfair font-bold mb-1 text-dark">VIP Premium</h3>
+              <h3 className="text-xl font-playfair font-bold mb-1 text-dark">Diamante</h3>
               <div className="flex items-baseline gap-2 mb-4">
                 <span className="text-3xl lg:text-4xl font-bold text-dark">$799</span>
                 <span className="text-dark/30 text-xs font-bold uppercase tracking-widest">MXN</span>
               </div>
               <ul className="space-y-2.5 mb-6 flex-grow">
-                {["Todo lo del plan RSVP", "Temas IA ilimitados", "Galería de fotos 4K", "Vídeo Invitación Pro", "Muro de felicitaciones", "Asesoría 1-a-1 diseño", "Descarga para impresión"].map((f, i) => (
+                {["Todo lo de Oro, más:", "Administrador invitados", "Confirmación digital", "Mensajes personalizados", "Hasta 3 imágenes x evento", "Hasta 12 fotos galería", "Eventos exclusivos"].map((f, i) => (
                   <li key={i} className="flex gap-2.5 text-[13px] text-dark/70 font-medium leading-tight">
                     <Check size={16} className="text-green-500 flex-shrink-0 mt-0.5" /> {f}
                   </li>
