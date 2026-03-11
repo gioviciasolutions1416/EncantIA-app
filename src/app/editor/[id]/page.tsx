@@ -191,6 +191,19 @@ function Preview({ data }: { data: EventData }) {
         en: { parents: 'Our Parents', godparents: 'Godparents', blessing: 'With Gods blessing', date: 'Date', venue: 'Venue', dress: 'Dress Code', adults: 'Adults Only', women: 'Ladies', men: 'Gentlemen', gallery: 'Photo Gallery' }
     }[lang];
 
+    const [isPlaying, setIsPlaying] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const togglePlay = () => {
+        if (!audioRef.current) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play().catch(e => console.log("Audio play blocked", e));
+        }
+        setIsPlaying(!isPlaying);
+    };
+
     const theme = data.styles_json || {};
     const bg = theme.background || '#fdf8f0';
     const primary = theme.primary || '#a35d6a';
@@ -230,6 +243,29 @@ function Preview({ data }: { data: EventData }) {
 
     return (
         <div className="w-full min-h-full flex flex-col items-center bg-white relative overflow-x-hidden pb-20" style={{ background: bg, fontFamily: `'${font}', serif`, color: theme.text || '#2d1b2d' }}>
+            {data.music_url && (
+                <>
+                    <audio ref={audioRef} src={data.music_url} loop />
+                    <button 
+                        onClick={togglePlay}
+                        className="fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border border-black/5"
+                        style={{ color: primary }}
+                    >
+                        <motion.div
+                            animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                        >
+                            <Music size={20} className={isPlaying ? 'text-[#a35d6a]' : 'text-gray-300'} />
+                        </motion.div>
+                        {isPlaying && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                            </span>
+                        )}
+                    </button>
+                </>
+            )}
             {/* Hero / Cover */}
             <div className="w-full h-[280px] relative shrink-0">
                 {data.cover_image_url ? (
@@ -565,6 +601,27 @@ export default function EditorPage() {
         }
     };
 
+    const handleMusicUpload = async (file: File) => {
+        if (!eventData) return;
+        setUploadLoading(true);
+        try {
+            const ext = file.name.split('.').pop();
+            const fileName = `music_${Date.now()}.${ext}`;
+            const path = `${eventData.id}/${fileName}`;
+            const { error: uploadError } = await supabase.storage.from('covers').upload(path, file, { upsert: true });
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage.from('covers').getPublicUrl(path);
+            update('music_url', publicUrl);
+            await supabase.from('events').update({ music_url: publicUrl }).eq('id', eventData.id);
+            toast.success('Música actualizada');
+        } catch (err: any) {
+            toast.error('Error al subir música: ' + (err.message || 'Error desconocido'));
+        } finally {
+            setUploadLoading(false);
+        }
+    };
+
     const handleVenueImageUpload = async (file: File) => {
         if (!eventData) return;
         setUploadLoading(true);
@@ -875,7 +932,7 @@ export default function EditorPage() {
 
                             <div className="flex flex-col">
                                 {/* 1. Página Principal */}
-                                <div className="border-b" style={{ borderColor }}>
+                                <div className={`transition-all duration-500 ${openSections.info ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.info ? '#a35d6a20' : borderColor }}>
                                     <SectionHeader icon={<Layout size={15} />} title="Página principal" open={openSections.info} onToggle={() => toggleSection('info')} />
                                     {openSections.info && (
                                         <div className="px-6 pb-6 pt-2 flex flex-col gap-6 animate-fade-in text-left">
@@ -933,13 +990,39 @@ export default function EditorPage() {
                                                         </button>
                                                     </div>
                                                 </div>
+
+                                                <div className="flex flex-col gap-3">
+                                                    <label className="text-[10px] font-bold text-[#7a5060] uppercase tracking-widest flex items-center gap-2">
+                                                        <Music size={11} className="text-[#a35d6a]" /> Música de Fondo
+                                                    </label>
+                                                    <div className="space-y-3">
+                                                        <input 
+                                                            value={eventData.music_url || ''} 
+                                                            onChange={(e) => update('music_url', e.target.value)} 
+                                                            placeholder="URL de YouTube, Spotify o MP3..." 
+                                                            className={inputCls} 
+                                                        />
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-[#e8d0d7] text-[10px] font-black text-[#a35d6a] cursor-pointer hover:bg-rose-50 transition-all">
+                                                                {uploadLoading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                                                                {eventData.music_url ? 'CAMBIAR ARCHIVO' : 'SUBIR MP3'}
+                                                                <input type="file" accept="audio/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleMusicUpload(e.target.files[0])} />
+                                                            </label>
+                                                            {eventData.music_url && (
+                                                                <button onClick={() => update('music_url', '')} className="p-3 rounded-2xl border bg-white text-red-500 hover:bg-red-50 transition-all">
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* 2. Invitación */}
-                                <div className="border-b" style={{ borderColor }}>
+                                <div className={`transition-all duration-500 ${openSections.invitation ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.invitation ? '#a35d6a20' : borderColor }}>
                                     <SectionHeader icon={<FileText size={15} />} title="Invitación" open={openSections.invitation} onToggle={() => toggleSection('invitation')} />
                                     {openSections.invitation && (
                                         <div className="px-6 pb-6 pt-2 flex flex-col gap-6 animate-fade-in text-left">
@@ -995,7 +1078,7 @@ export default function EditorPage() {
                                 </div>
 
                                 {/* 3. Datos de Evento */}
-                                <div className="border-b" style={{ borderColor }}>
+                                <div className={`transition-all duration-500 ${openSections.personal ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.personal ? '#a35d6a20' : borderColor }}>
                                     <SectionHeader icon={<Info size={15} />} title="Datos de evento" open={openSections.personal} onToggle={() => toggleSection('personal')} />
                                     {openSections.personal && (
                                         <div className="px-6 pb-6 pt-2 flex flex-col gap-6 animate-fade-in text-left">
@@ -1074,7 +1157,7 @@ export default function EditorPage() {
                                 </div>
 
                                 {/* 4. Código de Vestimenta */}
-                                <div className="border-b" style={{ borderColor }}>
+                                <div className={`transition-all duration-500 ${openSections.dressCode ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.dressCode ? '#a35d6a20' : borderColor }}>
                                     <SectionHeader icon={<Shirt size={15} />} title="Código de vestimenta" open={openSections.dressCode} onToggle={() => toggleSection('dressCode')} />
                                     {openSections.dressCode && (
                                         <div className="px-6 pb-12 pt-2 flex flex-col gap-6 animate-fade-in text-left">
@@ -1142,7 +1225,7 @@ export default function EditorPage() {
                                 </div>
 
                                 {/* 5. Itinerario */}
-                                <div className="border-b" style={{ borderColor }}>
+                                <div className={`transition-all duration-500 ${openSections.itinerary ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.itinerary ? '#a35d6a20' : borderColor }}>
                                     <SectionHeader icon={<CalendarClock size={15} />} title="Itinerario" open={openSections.itinerary} onToggle={() => toggleSection('itinerary')} />
                                     {openSections.itinerary && (
                                         <div className="px-6 pb-6 pt-2 flex flex-col gap-6 animate-fade-in text-left">
@@ -1297,7 +1380,7 @@ export default function EditorPage() {
                                 </div>
 
                                 {/* 6. Galería de Fotos */}
-                                <div className="border-b" style={{ borderColor }}>
+                                <div className={`transition-all duration-500 ${openSections.gallery ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.gallery ? '#a35d6a20' : borderColor }}>
                                     <SectionHeader icon={<ImageIcon size={15} />} title="Galería de fotos" open={openSections.gallery} onToggle={() => toggleSection('gallery')} />
                                     {openSections.gallery && (
                                         <div className="px-6 pb-6 pt-2 flex flex-col gap-6 animate-fade-in text-left">
@@ -1341,7 +1424,7 @@ export default function EditorPage() {
                             </div>
 
                             {/* Temas con IA */}
-                            <div className="border-b" style={{ borderColor }}>
+                            <div className={`transition-all duration-500 ${openSections.theme ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.theme ? '#a35d6a20' : borderColor }}>
                                 <SectionHeader icon={<Wand2 size={15} />} title="Temas con Inteligencia Artificial" open={openSections.theme} onToggle={() => toggleSection('theme')} />
                                 {openSections.theme && (
                                     <div className="px-6 pb-8 pt-2 animate-fade-in">
@@ -1391,16 +1474,16 @@ export default function EditorPage() {
                             </div>
 
                             {/* Temas Predeterminados */}
-                            <div className="border-b" style={{ borderColor }}>
+                            <div className={`transition-all duration-500 ${openSections.templates ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.templates ? '#a35d6a20' : borderColor }}>
                                 <SectionHeader icon={<Target size={15} />} title="Temas ya creados" open={openSections.templates} onToggle={() => toggleSection('templates')} />
                                 {openSections.templates && (
                                     <div className="px-6 pb-8 pt-2 animate-fade-in">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-3 gap-3">
                                             {PRESET_THEMES.map((theme, i) => (
                                                 <button
                                                     key={i}
                                                     onClick={() => update('styles_json', theme)}
-                                                    className={`group relative aspect-[4/3] rounded-3xl overflow-hidden border-2 transition-all hover:scale-[1.03] active:scale-95 ${eventData.styles_json?.style === theme.style ? 'border-[#a35d6a] shadow-xl shadow-rose-900/10' : 'border-transparent'}`}
+                                                    className={`group relative aspect-[4/5] rounded-2xl overflow-hidden border-2 transition-all hover:scale-[1.05] active:scale-95 ${eventData.styles_json?.style === theme.style ? 'border-[#a35d6a] shadow-lg shadow-[#a35d6a]/20' : 'border-gray-100'}`}
                                                 >
                                                     <div className="absolute inset-0 bg-white" style={{ background: theme.background }} />
                                                     <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-2">
@@ -1423,7 +1506,7 @@ export default function EditorPage() {
                             </div>
 
                             {/* Personalización Manual */}
-                            <div className="border-b" style={{ borderColor }}>
+                            <div className={`transition-all duration-500 ${openSections.design ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.design ? '#a35d6a20' : borderColor }}>
                                 <SectionHeader icon={<Palette size={15} />} title="Diseño Personalizado" open={openSections.design} onToggle={() => toggleSection('design')} />
                                 {openSections.design && (
                                     <div className="px-6 pb-12 pt-2 flex flex-col gap-8 animate-fade-in">
@@ -1523,7 +1606,7 @@ export default function EditorPage() {
                                 </h2>
                             </div>
 
-                            <div className="border-b" style={{ borderColor }}>
+                            <div className={`transition-all duration-500 ${openSections.security ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.security ? '#a35d6a20' : borderColor }}>
                                 <SectionHeader icon={<Shield size={15} />} title="Código QR y Acceso" open={openSections.security} onToggle={() => toggleSection('security')} />
                                 {openSections.security && (
                                     <div className="px-6 pb-6 pt-2 flex flex-col gap-6 animate-fade-in text-left">
@@ -1592,6 +1675,23 @@ export default function EditorPage() {
                         <button onClick={handlePublish} className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all hover:scale-[1.02] shadow-xl active:scale-95" style={{ background: isPublished ? '#ef4444' : 'linear-gradient(135deg, #a35d6a, #7B2D8B)' }}>
                             {isPublished ? <GlobeLock size={15} /> : <Globe size={15} />} {isPublished ? 'Despublicar' : 'Publicar'}
                         </button>
+                        
+                        {isPublished && (
+                            <button 
+                                onClick={() => {
+                                    const baseUrl = window.location.origin.includes('localhost') 
+                                        ? 'https://giovis-app-invitaciones.vercel.app' 
+                                        : window.location.origin;
+                                    const shareUrl = `${baseUrl}/invite/${eventData.slug}`;
+                                    const message = `✨ ¡HOLA! ✨\n\nNos encantaría que nos acompañes en nuestro gran día. 💍\n\nTe compartimos tu invitación digital personalizada aquí:\n👉 ${shareUrl}\n\n¡Por favor, no olvides confirmar tu asistencia! 💖`;
+                                    navigator.clipboard.writeText(message);
+                                    toast.success('Mensaje copiado para WhatsApp');
+                                }} 
+                                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 transition-all hover:bg-emerald-100 active:scale-95 shadow-sm"
+                            >
+                                <MessageSquare size={14} /> Compartir por WhatsApp
+                            </button>
+                        )}
                     </div>
                 </div>
 
