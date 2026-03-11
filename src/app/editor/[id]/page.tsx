@@ -8,12 +8,12 @@ import { toast } from 'sonner';
 import {
     ArrowLeft, Save, Globe, GlobeLock, Loader2, ChevronDown, ChevronUp,
     Smartphone, Monitor, Copy, Check, Wand2, Upload, Calendar, Clock,
-    MapPin, MessageSquare, Shirt, Gift, Type, Palette, X, CheckCircle2,
+    MapPin, MessageSquare, Shirt, Gift, Type, Palette, X, CheckCircle2, AlertCircle,
     Music, Image as ImageIcon, ExternalLink, Eye, Info, Plus, Layout, Shield,
-    Hash, Target, Navigation, Zap, Quote, FileText, Trash2, Camera, CreditCard, Lock, Menu, Users, 
-    Church, Car, Cake, Utensils, IceCream, Flower2, Wine, Heart, CalendarClock
+    Hash, Target, Navigation, Zap, Quote, FileText, Trash2, Camera, CreditCard, Lock, Menu, Users,
+    Church, Car, Cake, Utensils, IceCream, Flower2, Wine, Heart, CalendarClock, Volume2, VolumeX, Link as LinkIcon
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface EventData {
@@ -25,20 +25,19 @@ interface EventData {
     venue: string;
     message: string;
     dress_code: string;
-    gift_registry_url: string;
     cover_image_url: string;
     styles_json: Record<string, any>;
     is_published: boolean;
     slug: string;
-    // New fields
     music_url: string;
-    gallery_urls: string[];
+    gallery_urls?: string[];
     views: number;
     location_url: string;
     location_waze_url: string;
-    security_enabled: boolean;
+    security_enabled?: boolean;
+    security_pin?: string;
     plan: string;
-    language: string;
+    language?: string;
     date_format: string;
     time_format: string;
     timezone: string;
@@ -53,28 +52,22 @@ interface EventData {
     parents_groom_father_deceased: boolean;
     parents_groom_mother: string;
     parents_groom_mother_deceased: boolean;
-    // Section: Datos del Evento
     message_secondary: string;
     venue_address: string;
     venue_image_url: string;
-    adults_only: boolean;
+    adults_only?: boolean;
     calendar_enabled: boolean;
-    // Section: Vestimenta
     dress_code_show_title: boolean;
     dress_code_detail: string;
     dress_code_women: string;
     dress_code_men: string;
     dress_code_icons_enabled: boolean;
-    // Section: Regalos
-    gift_registry_enabled: boolean;
-    gift_registry_type: 'link' | 'code' | 'envelope';
-    gift_registry_code: string;
-    gift_registry_url: string;
-    // Security and Access
-    security_enabled: boolean;
+    gift_registry_enabled?: boolean;
+    gift_registry_type?: 'link' | 'code' | 'envelope';
+    gift_registry_code?: string;
+    gift_registry_url?: string;
     password_enabled: boolean;
     access_password: string;
-    // Itinerary
     itinerary_ceremony_type: string;
     itinerary_date: string;
     itinerary_items: { name: string; time: string; icon: string; description?: string }[];
@@ -197,33 +190,35 @@ function Preview({ data }: { data: EventData }) {
             parents_bride: 'Padres de la Novia',
             parents_groom: 'Padres del Novio',
             godparents: 'Nuestros Padrinos', 
-            blessing: 'Con la bendición de Dios', 
+            blessing: 'Con la bendición de nuestros padres:', 
             date: 'Fecha', 
             venue: 'Lugar', 
             dress: 'Código de Vestimenta', 
-            adults: 'Solo Adultos', 
+            adults: 'Evento solo para adultos', 
             women: 'Damas', 
             men: 'Caballeros', 
             gallery: 'Galería de Fotos',
             invitation: 'Invitación',
             itinerary: 'Itinerario',
             gift: 'Mesa de Regalos',
-            gift_msg: 'Tu presencia es nuestro mejor regalo, pero si deseas obsequiarnos algo:',
+            gift_msg: 'Tu presencia es nuestro mejor regalo, pero si desean obsequiarnos algo:',
             envelope: 'Lluvia de Sobres',
             envelope_msg: 'Agradecemos tu detalle en efectivo el día del evento.',
             code: 'Código:',
-            add_calendar: 'Añadir al Calendario'
+            add_calendar: 'Agendar en mi Calendario',
+            rsvp: 'Confirmar Asistencia',
+            at: 'a las'
         },
         en: { 
             parents: 'Our Parents', 
             parents_bride: 'Parents of the Bride',
             parents_groom: 'Parents of the Groom',
             godparents: 'Godparents', 
-            blessing: 'With God\'s blessing', 
+            blessing: 'With the blessing of our parents:', 
             date: 'Date', 
             venue: 'Venue', 
             dress: 'Dress Code', 
-            adults: 'Adults Only', 
+            adults: 'Adults Only Event', 
             women: 'Ladies', 
             men: 'Gentlemen', 
             gallery: 'Photo Gallery',
@@ -234,254 +229,260 @@ function Preview({ data }: { data: EventData }) {
             envelope: 'Envelope Shower',
             envelope_msg: 'We appreciate your cash gift on the day of the event.',
             code: 'Code:',
-            add_calendar: 'Add to Calendar'
+            add_calendar: 'Add to Calendar',
+            rsvp: 'Confirm Attendance',
+            at: 'at'
         }
     }[lang];
 
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({ container: containerRef });
 
     const togglePlay = () => {
         if (!audioRef.current) return;
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play().catch(e => console.log("Audio play blocked", e));
-        }
-        setIsPlaying(!isPlaying);
+        if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
+        else { audioRef.current.play().catch(e => console.log("Audio blocked", e)); setIsPlaying(true); }
     };
 
     const theme = data.styles_json || {};
     const bg = theme.background || '#fdf8f0';
     const primary = theme.primary || '#a35d6a';
+    const secondary = theme.secondary || '#7B2D8B';
     const font = theme.font || 'Playfair Display';
+
+    // Parallax Effects (Inside Editor Preview Container)
+    const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+    const scaleHero = useTransform(scrollYProgress, [0, 0.2], [1, 1.1]);
 
     // Load Font
     useEffect(() => {
         if (font) {
             const link = document.createElement('link');
-            link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;700&display=swap`;
+            link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:ital,wght@0,400;0,700;0,900;1,400&family=Montserrat:wght@400;700;900&display=swap`;
             link.rel = 'stylesheet';
             document.head.appendChild(link);
             return () => { document.head.removeChild(link); };
         }
     }, [font]);
 
-    const formats: Record<string, Intl.DateTimeFormatOptions> = {
-        long: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
-        short: { day: '2-digit', month: '2-digit', year: 'numeric' },
-        abbrev: { weekday: 'short', day: 'numeric', month: 'short' },
+    const formatShortDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr + 'T12:00:00');
+        return date.toLocaleDateString(lang === 'en' ? 'en-US' : 'es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     };
-    const dateFormatOptions: Intl.DateTimeFormatOptions = formats[data.date_format || 'long'] || formats.long;
 
-    const timeFormats: Record<string, Intl.DateTimeFormatOptions> = {
-        '24h': { hour: '2-digit', minute: '2-digit', hour12: false },
-        '12h': { hour: '2-digit', minute: '2-digit', hour12: true },
+    const formatTime = (time: string) => {
+        if (!time) return '';
+        const [h, m] = time.split(':');
+        const hour = parseInt(h);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const h12 = hour % 12 || 12;
+        return `${h12}:${m} ${ampm}`;
     };
-    const timeFormatOptions: Intl.DateTimeFormatOptions = timeFormats[data.time_format || '24h'] || timeFormats['24h'];
-
-    const formattedDate = data.event_date
-        ? new Date(data.event_date + 'T12:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'es-MX', dateFormatOptions)
-        : null;
-
-    const formattedTime = data.event_time
-        ? new Date(`2000-01-01T${data.event_time}`).toLocaleTimeString(lang === 'en' ? 'en-US' : 'es-MX', timeFormatOptions)
-        : null;
 
     return (
-        <div className="w-full min-h-full flex flex-col items-center bg-white relative overflow-x-hidden pb-20" style={{ background: bg, fontFamily: `'${font}', serif`, color: theme.text || '#2d1b2d' }}>
+        <div ref={containerRef} className="w-full h-full flex flex-col items-center bg-white relative overflow-x-hidden overflow-y-auto no-scrollbar pb-32" style={{ background: bg, fontFamily: "'Montserrat', sans-serif", color: theme.text || '#2d1b2d' }}>
             {data.music_url && (
                 <>
                     <audio key={data.music_url} ref={audioRef} src={data.music_url} loop />
                     <button 
                         onClick={togglePlay}
-                        className="fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border border-black/5"
+                        className="fixed bottom-24 right-6 z-[100] w-11 h-11 rounded-full bg-white/70 backdrop-blur-md shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border border-black/5"
                         style={{ color: primary }}
                     >
-                        <motion.div
-                            animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        >
-                            <Music size={20} className={isPlaying ? 'text-[#a35d6a]' : 'text-gray-300'} />
-                        </motion.div>
-                        {isPlaying && (
-                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                            </span>
-                        )}
+                        {isPlaying ? <Volume2 size={18} className="animate-pulse" /> : <VolumeX size={18} className="opacity-40" />}
                     </button>
                 </>
             )}
-            {/* Hero / Cover */}
-            <div className="w-full h-[280px] relative shrink-0">
-                {data.cover_image_url ? (
-                    <img src={data.cover_image_url} className="w-full h-full object-cover" alt="Hero" />
-                ) : (
-                    <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${primary}, ${theme.secondary || '#7B2D8B'})` }} />
-                )}
+
+            {/* Hero / Cover (Full Screen Inspired) */}
+            <div className="w-full h-[450px] relative shrink-0 overflow-hidden">
+                <motion.div style={{ opacity: opacityHero, scale: scaleHero }} className="absolute inset-0">
+                    {data.cover_image_url ? (
+                        <>
+                            <img src={data.cover_image_url} className="w-full h-full object-cover" alt="Hero" />
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/40" />
+                        </>
+                    ) : (
+                        <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }} />
+                    )}
+                </motion.div>
                 <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t" style={{ backgroundImage: `linear-gradient(to top, ${bg}, ${bg}E6 40%, transparent)` }} />
+                
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white z-10">
+                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 0.8 }} className="text-[9px] font-black tracking-[0.4em] uppercase mb-4">{data.event_type || 'Invitación'}</motion.span>
+                    <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-4xl font-black leading-tight drop-shadow-xl" style={{ fontFamily: `'${font}', serif` }}>{data.title || 'Título'}</motion.h1>
+                </div>
             </div>
 
-            <div className="px-6 py-10 w-full flex flex-col items-center gap-6 -mt-32 relative z-10 backdrop-blur-sm rounded-t-[50px] transition-all duration-700" style={{ borderColor: `${primary}20` }}>
-                <span className="text-[9px] font-black tracking-[0.4em] uppercase opacity-40" style={{ color: primary }}>{t.invitation}</span>
-                <h1 className="text-3xl font-bold leading-tight uppercase text-center animate-fade-in" style={{ color: primary, fontFamily: `'${font}', serif` }}>{data.title || 'Título del Evento'}</h1>
+            <main className="w-full px-6 flex flex-col items-center gap-16 relative z-10 -mt-10 bg-white/40 backdrop-blur-sm rounded-t-[40px] border-t border-white/50">
+                
+                {/* Parents/Blessing */}
+                <section className="pt-20 text-center w-full max-w-[300px]">
+                    {(data.parents_bride_father || data.parents_bride_mother || data.parents_groom_father || data.parents_groom_mother) && (
+                        <div className="flex flex-col gap-10">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 text-[#a35d6a]">{t.blessing}</span>
+                            <div className="space-y-8">
+                                {(data.parents_bride_father || data.parents_bride_mother) && (
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{t.parents_bride}</p>
+                                        <p className="text-sm font-bold uppercase">{data.parents_bride_father_deceased && '✝'} {data.parents_bride_father}</p>
+                                        <p className="text-sm font-bold uppercase">{data.parents_bride_mother_deceased && '✝'} {data.parents_bride_mother}</p>
+                                    </div>
+                                )}
+                                {(data.parents_bride_father || data.parents_bride_mother) && (data.parents_groom_father || data.parents_groom_mother) && <div className="w-8 h-[1px] bg-[#a35d6a]/20 mx-auto" />}
+                                {(data.parents_groom_father || data.parents_groom_mother) && (
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{t.parents_groom}</p>
+                                        <p className="text-sm font-bold uppercase">{data.parents_groom_father_deceased && '✝'} {data.parents_groom_father}</p>
+                                        <p className="text-sm font-bold uppercase">{data.parents_groom_mother_deceased && '✝'} {data.parents_groom_mother}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
-                {(data.parents_bride_father || data.parents_bride_mother || data.parents_groom_father || data.parents_groom_mother) && (
-                    <div className="flex flex-col gap-4 text-center mt-2">
-                        <p className="text-[10px] italic opacity-50" style={{ color: theme.text }}>{t.blessing}</p>
-                        <div className="space-y-3">
-                            {(data.parents_bride_father || data.parents_bride_mother) && (
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">{t.parents_bride}</p>
-                                    {data.parents_bride_father && <p className="text-xs font-bold uppercase">{data.parents_bride_father_deceased && '✝'} {data.parents_bride_father}</p>}
-                                    {data.parents_bride_mother && <p className="text-xs font-bold uppercase">{data.parents_bride_mother_deceased && '✝'} {data.parents_bride_mother}</p>}
+                    {data.message && (
+                        <div className="mt-12 p-8 rounded-[32px] bg-rose-50/50 border border-rose-100/50">
+                            <p className="text-xl font-serif italic opacity-80 leading-relaxed" style={{ fontFamily: `'${font}', serif` }}>"{data.message}"</p>
+                        </div>
+                    )}
+                </section>
+
+                {/* Venue & Time */}
+                <section className="w-full flex flex-col items-center text-center py-10 border-y border-[#a35d6a]/10">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 mb-6">{formatShortDate(data.event_date)}</p>
+                    <div className="space-y-2 mb-6">
+                        <h3 className="text-3xl font-black tracking-tight" style={{ color: primary }}>{data.venue || 'Salón / Lugar'}</h3>
+                        <p className="text-xs font-bold opacity-40 uppercase tracking-widest">{data.venue_address}</p>
+                    </div>
+                    {data.event_time && (
+                        <div className="px-4 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-[#a35d6a] text-[10px] font-black uppercase tracking-widest">
+                            {t.at} {formatTime(data.event_time)}
+                        </div>
+                    )}
+                </section>
+
+                {/* Dress Code */}
+                {data.dress_code && (
+                    <section className="flex flex-col items-center gap-8 py-10 w-full rounded-[40px] glass shadow-sm border border-white">
+                        <div className="text-center">
+                            <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-30 mb-3">{t.dress}</p>
+                            <p className="text-3xl font-bold italic mb-1" style={{ color: primary, fontFamily: `'${font}', serif` }}>{data.dress_code}</p>
+                            {data.dress_code_detail && <p className="text-[10px] opacity-40 max-w-[200px] mx-auto mt-2 leading-relaxed">{data.dress_code_detail}</p>}
+                        </div>
+
+                        {data.dress_code_icons_enabled && (
+                            <div className="flex gap-12">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full glass flex items-center justify-center shadow-lg border border-white">
+                                        <DressIcon type={data.dress_code_women} gender="women" size={40} />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-widest opacity-40">{t.women}</span>
                                 </div>
-                            )}
-                            {(data.parents_bride_father || data.parents_bride_mother) && (data.parents_groom_father || data.parents_groom_mother) && (
-                                <div className="w-6 h-[1px] mx-auto opacity-20" style={{ backgroundColor: primary }} />
-                            )}
-                            {(data.parents_groom_father || data.parents_groom_mother) && (
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">{t.parents_groom}</p>
-                                    {data.parents_groom_father && <p className="text-xs font-bold uppercase">{data.parents_groom_father_deceased && '✝'} {data.parents_groom_father}</p>}
-                                    {data.parents_groom_mother && <p className="text-xs font-bold uppercase">{data.parents_groom_mother_deceased && '✝'} {data.parents_groom_mother}</p>}
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full glass flex items-center justify-center shadow-lg border border-white">
+                                        <DressIcon type={data.dress_code_men} gender="men" size={40} />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-widest opacity-40">{t.men}</span>
                                 </div>
-                            )}
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* Itinerary */}
+                {data.itinerary_items && data.itinerary_items.length > 0 && (
+                    <section className="w-full space-y-12 py-10">
+                        <div className="text-center">
+                            <h3 className="text-[11px] font-black uppercase tracking-[0.5em] opacity-30">{t.itinerary}</h3>
+                        </div>
+                        <div className="space-y-10 px-4">
+                            {data.itinerary_items.map((item: any, i: number) => (
+                                <div key={i} className="flex gap-6 items-start relative">
+                                    {i < data.itinerary_items.length - 1 && (
+                                        <div className="absolute left-[23px] top-14 bottom-[-40px] w-0.5 border-l-2 border-dashed border-[#a35d6a]/10" />
+                                    )}
+                                    <div className="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center shrink-0 border border-black/5 z-10 transition-transform hover:scale-110">
+                                        <div className="text-[#a35d6a]">
+                                            <ItineraryIcon id={item.icon} size={20} />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 pt-1 text-left flex-1">
+                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-30 mb-0.5">{item.time}</p>
+                                        <p className="text-sm font-black tracking-tight">{item.name}</p>
+                                        {item.description && <p className="text-[10px] text-gray-500 leading-relaxed line-clamp-2">{item.description}</p>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Gallery */}
+                {data.gallery_urls && data.gallery_urls.length > 0 && (
+                    <section className="w-full space-y-8 py-10">
+                        <h3 className="text-center text-[10px] font-black uppercase tracking-[0.4em] opacity-30">{t.gallery}</h3>
+                        <div className="grid grid-cols-2 gap-3 px-2">
+                            {data.gallery_urls.map((url: string, i: number) => (
+                                <div key={i} className={`aspect-[4/5] rounded-[32px] overflow-hidden shadow-premium border-[3px] border-white transform ${i % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}>
+                                    <img src={url} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Gift Registry */}
+                {data.gift_registry_enabled && (
+                    <section className="w-[90%] p-10 rounded-[48px] border-2 border-dashed flex flex-col items-center gap-6 group transition-all mb-10" style={{ borderColor: `${primary}15`, background: `${primary}05` }}>
+                        <div className="w-16 h-16 rounded-3xl bg-white shadow-xl flex items-center justify-center rotate-12 transition-transform">
+                            <Gift size={32} style={{ color: primary }} />
+                        </div>
+                        <div className="text-center space-y-2">
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">{t.gift}</h4>
+                            <p className="text-[10px] opacity-40 max-w-[200px] leading-relaxed italic">{t.gift_msg}</p>
+                        </div>
+                        
+                        {data.gift_registry_type === 'link' && (
+                            <div className="w-full py-4 rounded-2xl bg-black text-white text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
+                                <ExternalLink size={14} /> Ver Mesa
+                            </div>
+                        )}
+
+                        {data.gift_registry_type === 'code' && (
+                            <div className="w-full py-4 rounded-2xl border-2 bg-white flex flex-col items-center justify-center gap-1 shadow-sm" style={{ borderColor: `${primary}10` }}>
+                                <span className="text-[8px] font-black opacity-30 uppercase">{t.code}</span>
+                                <span className="text-lg font-black tracking-tight" style={{ color: primary }}>{data.gift_registry_code}</span>
+                            </div>
+                        )}
+
+                        {data.gift_registry_type === 'envelope' && (
+                            <div className="text-center">
+                                <p className="text-[10px] font-black italic mb-1" style={{ color: primary }}>{t.envelope}</p>
+                                <p className="text-[9px] opacity-30 uppercase max-w-[150px] mx-auto leading-tight">{t.envelope_msg}</p>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* Adults Only */}
+                {data.adults_only && (
+                    <div className="pb-20 opacity-40">
+                        <div className="flex items-center gap-3 px-6 py-2 rounded-full border border-rose-100 bg-white/50">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#a35d6a]" />
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.adults}</span>
                         </div>
                     </div>
                 )}
+            </main>
 
-                {data.message && <p className="text-sm italic opacity-80 max-w-[240px] text-center leading-relaxed">"{data.message}"</p>}
-                {data.message_secondary && <p className="text-[10px] font-bold opacity-60 max-w-[200px] text-center leading-relaxed mt-[-10px]">{data.message_secondary}</p>}
-
-                <div className="w-full py-10 border-y flex flex-col items-center gap-5" style={{ borderColor: `${primary}15` }}>
-                    {formattedDate && <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">{formattedDate}</p>}
-                    <div className="flex flex-col items-center gap-1">
-                        <p className="text-2xl font-bold" style={{ color: primary }}>{data.venue || 'Nombre del Lugar'}</p>
-                        <p className="text-[10px] opacity-60 uppercase tracking-widest font-bold">{data.venue_address || 'Dirección'}</p>
-                    </div>
-                    {formattedTime && <p className="text-xs font-black uppercase tracking-widest opacity-40">{formattedTime}</p>}
-
-                    {data.calendar_enabled && (
-                        <button className="mt-2 px-6 py-2.5 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-black hover:text-white transition-all shadow-sm" style={{ borderColor: `${primary}30`, color: primary }}>
-                            <Calendar size={12} /> {t.add_calendar}
-                        </button>
-                    )}
-                </div>
-
-                <div className="flex flex-col items-center gap-10 py-6 w-full">
-                    {data.dress_code && (
-                        <div className="text-center w-full">
-                            {data.dress_code_show_title && <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-4" style={{ color: primary }}>{t.dress}</p>}
-                            <p className="text-lg font-bold italic mb-1" style={{ color: primary }}>{data.dress_code}</p>
-                            {data.dress_code_detail && <p className="text-[10px] opacity-60 mb-6 max-w-[200px] mx-auto leading-relaxed">{data.dress_code_detail}</p>}
-
-                            {data.dress_code_icons_enabled && (
-                                <div className="flex justify-center gap-12 mt-4">
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white shadow-sm border border-black/5">
-                                            <DressIcon type={data.dress_code_women} gender="women" color={primary} />
-                                        </div>
-                                        <div className="flex flex-col gap-0.5">
-                                            <p className="text-[8px] font-black uppercase opacity-40 tracking-widest">{t.women}</p>
-                                            <p className="text-[10px] font-bold">{data.dress_code_women || 'Vestido'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white shadow-sm border border-black/5">
-                                            <DressIcon type={data.dress_code_men} gender="men" color={primary} />
-                                        </div>
-                                        <div className="flex flex-col gap-0.5">
-                                            <p className="text-[8px] font-black uppercase opacity-40 tracking-widest">{t.men}</p>
-                                            <p className="text-[10px] font-bold">{data.dress_code_men || 'Traje'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {data.itinerary_items && data.itinerary_items.length > 0 && (
-                        <div className="w-full space-y-8 mt-6">
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="w-8 h-[1px] opacity-20" style={{ backgroundColor: primary }} />
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40" style={{ color: primary }}>{t.itinerary}</h3>
-                            </div>
-                            <div className="flex flex-col gap-8 px-4">
-                                {data.itinerary_items.map((item, i) => (
-                                    <div key={i} className="flex gap-6 items-start relative">
-                                        {i < data.itinerary_items.length - 1 && (
-                                            <div className="absolute left-[23px] top-12 bottom-[-32px] w-[1px] border-l border-dashed border-gray-200" />
-                                        )}
-                                        <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-black/5 flex items-center justify-center shrink-0">
-                                            <ItineraryIcon id={item.icon} size={20} />
-                                        </div>
-                                        <div className="flex flex-col gap-1 pt-1 text-left">
-                                            <p className="text-[9px] font-black uppercase tracking-widest opacity-40">{item.time}</p>
-                                            <p className="text-sm font-bold">{item.name}</p>
-                                            {item.description && <p className="text-[10px] text-gray-500 leading-relaxed max-w-[200px]">{item.description}</p>}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {data.gallery_urls && data.gallery_urls.length > 0 && (
-                        <div className="w-full space-y-6 mt-4">
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="w-8 h-[1px] opacity-20" style={{ backgroundColor: primary }} />
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40" style={{ color: primary }}>{t.gallery}</h3>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 px-2">
-                                {data.gallery_urls.map((url: string, i: number) => (
-                                    <div key={i} className={`aspect-[4/5] rounded-3xl overflow-hidden shadow-sm border-4 border-white transform transition-transform hover:scale-[1.02] ${i % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}>
-                                        <img src={url} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {data.adults_only && (
-                        <div className="mt-10 px-6 py-2.5 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-3 shadow-sm" style={{ borderColor: `${primary}20`, color: primary }}>
-                            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: primary }} />
-                            {t.adults}
-                        </div>
-                    )}
-
-                    {data.gift_registry_enabled && (
-                        <div className="mt-16 w-[90%] p-10 rounded-[40px] border-2 border-dashed flex flex-col items-center gap-6 group transition-all" style={{ borderColor: `${primary}15`, background: `${primary}05` }}>
-                            <div className="w-16 h-16 rounded-3xl bg-white shadow-xl flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform">
-                                <Gift size={32} style={{ color: primary }} />
-                            </div>
-                            <div className="text-center space-y-2">
-                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">{t.gift}</h4>
-                                <p className="text-xs opacity-60 max-w-[200px] leading-relaxed italic">{t.gift_msg}</p>
-                            </div>
-                            
-                            {data.gift_registry_type === 'link' && data.gift_registry_url && (
-                                <a href={data.gift_registry_url} target="_blank" className="w-full py-4 rounded-2xl bg-black text-white text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all">
-                                    <ExternalLink size={14} /> {lang === 'en' ? 'Open Registry' : 'Ver Mesa'}
-                                </a>
-                            )}
-
-                            {data.gift_registry_type === 'code' && data.gift_registry_code && (
-                                <div className="w-full py-4 rounded-2xl border-2 bg-white flex flex-col items-center justify-center gap-1 shadow-sm" style={{ borderColor: `${primary}20` }}>
-                                    <span className="text-[9px] font-black opacity-30 uppercase">{t.code}</span>
-                                    <span className="text-xl font-bold tracking-tight" style={{ color: primary }}>{data.gift_registry_code}</span>
-                                </div>
-                            )}
-
-                            {data.gift_registry_type === 'envelope' && (
-                                <div className="text-center">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest leading-loose" style={{ color: primary }}>{t.envelope}</p>
-                                    <p className="text-[9px] opacity-40 uppercase max-w-[180px] mx-auto">{t.envelope_msg}</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
+            {/* RSVP Sticky Action */}
+            <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-8">
+                <div className="w-full max-w-[280px] h-14 rounded-full bg-black text-white flex items-center justify-center gap-3 font-black text-[11px] uppercase tracking-widest shadow-2xl">
+                    <CheckCircle2 size={18} /> {t.rsvp}
                 </div>
             </div>
         </div>
@@ -736,7 +737,7 @@ export default function EditorPage() {
     };
 
     const handleGenerateTheme = async () => {
-        if (!themePrompt.trim()) return;
+        if (!eventData || !themePrompt.trim()) return;
         setIsGeneratingTheme(true);
         setGeneratedTheme(null);
         try {
@@ -1062,6 +1063,23 @@ export default function EditorPage() {
                                                         <option value="Oro">Oro ($499 MXN)</option>
                                                         <option value="Diamante">Diamante ($799 MXN)</option>
                                                     </select>
+                                                </div>
+
+                                                <div className="flex flex-col gap-2">
+                                                    <label className="text-[10px] font-bold text-[#7a5060] uppercase tracking-widest flex items-center gap-2">
+                                                        <LinkIcon size={11} className="text-[#a35d6a]" /> Link Personalizado
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-bold text-gray-400">/invite/</span>
+                                                        <input 
+                                                            value={eventData.slug || ''} 
+                                                            onChange={(e) => update('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} 
+                                                            placeholder="mi-gran-boda" 
+                                                            className={inputCls + ' flex-1 border-2 font-bold text-xs'}
+                                                            style={{ borderColor }}
+                                                        />
+                                                    </div>
+                                                    <p className="text-[8px] text-gray-400 px-1 italic">Este será el link que compartas. Evita espacios y caracteres especiales.</p>
                                                 </div>
 
                                                 <div className="flex flex-col gap-3">
@@ -1647,25 +1665,20 @@ export default function EditorPage() {
                                 <SectionHeader icon={<Target size={15} />} title="Temas ya creados" open={openSections.templates} onToggle={() => toggleSection('templates')} />
                                 {openSections.templates && (
                                     <div className="px-6 pb-8 pt-2 animate-fade-in">
-                                        <div className="grid grid-cols-4 gap-2">
+                                        <div className="grid grid-cols-5 gap-2 px-1">
                                             {PRESET_THEMES.map((theme, i) => (
                                                 <button
                                                     key={i}
                                                     onClick={() => update('styles_json', theme)}
-                                                    className={`group relative aspect-square rounded-xl overflow-hidden border-[3px] transition-all hover:scale-[1.05] active:scale-95 ${eventData.styles_json?.style === theme.style ? 'border-[#a35d6a] shadow-md shadow-[#a35d6a]/20' : 'border-gray-200'}`}
+                                                    className={`group relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-[1.05] active:scale-95 ${eventData.styles_json?.style === theme.style ? 'border-[#a35d6a] shadow-lg shadow-[#a35d6a]/20 scale-105 z-10' : 'border-gray-100 hover:border-rose-200'}`}
                                                 >
-                                                    <div className="absolute inset-0 bg-white" style={{ background: theme.background }} />
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-2 gap-1">
-                                                        <span className="text-[8px] font-black uppercase tracking-tighter text-center leading-none opacity-40" style={{ color: theme.primary }}>{theme.style}</span>
-                                                        <div className="flex gap-0.5 mt-1">
-                                                            <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: theme.primary }} />
-                                                            <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: theme.secondary }} />
-                                                        </div>
+                                                    <div className="absolute inset-0" style={{ background: theme.background }} />
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-1.5 gap-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ backgroundColor: theme.primary }} />
+                                                        <div className="w-1.5 h-1.5 rounded-full shadow-sm opacity-50" style={{ backgroundColor: theme.secondary }} />
                                                     </div>
                                                     {eventData.styles_json?.style === theme.style && (
-                                                        <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#a35d6a] rounded-full flex items-center justify-center text-white shadow-lg">
-                                                            <CheckCircle2 size={10} />
-                                                        </div>
+                                                        <div className="absolute inset-0 bg-[#a35d6a]/5" />
                                                     )}
                                                 </button>
                                             ))}
