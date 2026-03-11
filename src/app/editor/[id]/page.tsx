@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
@@ -13,7 +13,28 @@ import {
     Hash, Target, Navigation, Zap, Quote, FileText, Trash2, Camera, CreditCard, Lock, Menu, Users,
     Church, Car, Cake, Utensils, IceCream, Flower2, Wine, Heart, CalendarClock, Volume2, VolumeX, Link as LinkIcon
 } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+
+// ─── Helpers & Constants ────────────────────────────────────────────────────
+const TEXTURES = [
+    { id: 'none', name: 'Ninguno', url: '' },
+    { id: 'linen', name: 'Lino Fino', url: 'https://www.transparenttextures.com/patterns/white-linen.png' },
+    { id: 'cotton', name: 'Papel Algodón', url: 'https://www.transparenttextures.com/patterns/paper-fibers.png' },
+    { id: 'marble', name: 'Mármol Carrara', url: 'https://www.transparenttextures.com/patterns/marble-similar.png' },
+    { id: 'vintage', name: 'Pergamino Viejos', url: 'https://www.transparenttextures.com/patterns/old-mathematics.png' },
+    { id: 'silk', name: 'Seda Real', url: 'https://www.transparenttextures.com/patterns/silk.png' },
+    { id: 'watercolor', name: 'Acuarela', url: 'https://www.transparenttextures.com/patterns/natural-paper.png' }
+];
+
+const getOptimalTextColor = (hex: string) => {
+    if (!hex) return '#2d1b2d';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 160) ? '#2d1b2d' : '#fdf8f0';
+};
+
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface EventData {
@@ -71,6 +92,13 @@ interface EventData {
     itinerary_ceremony_type: string;
     itinerary_date: string;
     itinerary_items: { name: string; time: string; icon: string; description?: string }[];
+    sections_styles?: Record<string, {
+        background?: string;
+        texture?: string;
+        color?: string;
+        isVisible?: boolean;
+        padding?: string;
+    }>;
 }
 
 interface Theme {
@@ -158,11 +186,13 @@ const ITINERARY_ICONS_LIST = [
 function ItineraryIcon({ id, size = 16 }: { id: string; size?: number }) {
     const item = ITINERARY_ICONS_LIST.find(i => i.id === id);
     if (!item) return <Clock size={size} />;
-    return item.icon;
+    
+    // Clone the icon with the new size
+    return React.cloneElement(item.icon as React.ReactElement, { size });
 }
 
 // ─── SVG Icons for Dress Code (Premium Artistic Style) ──────────────────────
-function DressIcon({ type, gender, size = 32 }: { type: string; gender: 'women' | 'men'; color?: string; size?: number }) {
+function DressIcon({ type, gender, size = 32, color }: { type: string; gender: 'women' | 'men'; color?: string; size?: number }) {
     const iconName = type ? type.toLowerCase().replace(/ /g, '_') : '';
     let src = '';
 
@@ -178,11 +208,96 @@ function DressIcon({ type, gender, size = 32 }: { type: string; gender: 'women' 
         else src = '/iconos/dress_code/traje.png'; // Fallback
     }
 
+    if (color) {
+        return (
+            <div 
+                style={{ 
+                    width: size, 
+                    height: size, 
+                    backgroundColor: color,
+                    WebkitMaskImage: `url(${src})`,
+                    maskImage: `url(${src})`,
+                    WebkitMaskSize: 'contain',
+                    maskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                    maskPosition: 'center'
+                }} 
+            />
+        );
+    }
+
     return <img src={src} alt={type} style={{ width: size, height: size, objectFit: 'contain' }} />;
 }
 
-// ─── Invitation Preview (Real-time Sync) ────────────────────────────────────
+// ─── Section Style Helper Component ─────────────────────────────────────────
+function SectionStylePicker({ sectionId, data, onUpdate }: { sectionId: string; data: EventData; onUpdate: (key: string, value: any) => void }) {
+    const sectionStyle = data.sections_styles?.[sectionId] || { background: '', texture: 'none', color: '', isVisible: true };
+    const updateSection = (field: string, value: any) => {
+        const newStyles = { ...data.sections_styles };
+        newStyles[sectionId] = { ...sectionStyle, [field]: value };
+        onUpdate('sections_styles', newStyles);
+    };
+
+    return (
+        <div className="mt-4 p-5 rounded-[2rem] bg-rose-50/30 border border-rose-100 flex flex-col gap-5 animate-fade-in shadow-inner">
+            <div className="flex items-center justify-between px-1">
+                <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-black text-[#a35d6a] uppercase tracking-widest">Apariencia de Sección</span>
+                    <span className="text-[8px] text-gray-400 font-bold uppercase">Texturas y Colores Reales</span>
+                </div>
+                <button 
+                    onClick={() => updateSection('isVisible', !sectionStyle.isVisible)}
+                    className={`w-10 h-5 rounded-full p-1 transition-all ${sectionStyle.isVisible ? 'bg-[#a35d6a]' : 'bg-gray-200'}`}
+                >
+                    <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${sectionStyle.isVisible ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2 p-3 rounded-2xl bg-white/50 border border-white">
+                    <label className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Color de Papel</label>
+                    <div className="flex items-center gap-2">
+                        <input type="color" value={sectionStyle.background || '#ffffff'} onChange={(e) => updateSection('background', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent" />
+                        <span className="text-[10px] font-bold text-gray-600 uppercase">{sectionStyle.background || '#FFFFFF'}</span>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-2 p-3 rounded-2xl bg-white/50 border border-white">
+                    <label className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Color de Texto</label>
+                    <div className="flex items-center gap-2">
+                        <input type="color" value={sectionStyle.color || '#2d1b2d'} onChange={(e) => updateSection('color', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent" />
+                        <span className="text-[10px] font-bold text-gray-600 uppercase">{sectionStyle.color || '#2D1B2D'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-1">Textura Material</label>
+                <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar px-1">
+                    {TEXTURES.map((t) => (
+                        <button
+                            key={t.id}
+                            onClick={() => updateSection('texture', t.id)}
+                            className={`shrink-0 group relative w-16 h-20 rounded-2xl border-2 transition-all ${sectionStyle.texture === t.id ? 'border-[#a35d6a] shadow-lg -translate-y-1' : 'border-white hover:border-rose-100'}`}
+                        >
+                            <div className="w-full h-full rounded-[14px] bg-white relative overflow-hidden shadow-sm">
+                                {t.url && <div className="absolute inset-0 opacity-40 group-hover:opacity-60 transition-opacity" style={{ backgroundImage: `url(${t.url})`, backgroundSize: '60px' }} />}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                                <div className="absolute inset-0 flex items-center justify-center p-2">
+                                    <span className="text-[7px] font-black uppercase text-white drop-shadow-md text-center leading-tight">{t.name}</span>
+                                </div>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function Preview({ data }: { data: EventData }) {
+    const [envelopeOpen, setEnvelopeOpen] = useState(false);
     const lang = data.language === 'en' ? 'en' : 'es';
     const t = {
         es: { 
@@ -207,7 +322,8 @@ function Preview({ data }: { data: EventData }) {
             code: 'Código:',
             add_calendar: 'Agendar en mi Calendario',
             rsvp: 'Confirmar Asistencia',
-            at: 'a las'
+            at: 'a las',
+            open: 'Abrir Invitación'
         },
         en: { 
             parents: 'Our Parents', 
@@ -231,7 +347,8 @@ function Preview({ data }: { data: EventData }) {
             code: 'Code:',
             add_calendar: 'Add to Calendar',
             rsvp: 'Confirm Attendance',
-            at: 'at'
+            at: 'at',
+            open: 'Open Invitation'
         }
     }[lang];
 
@@ -240,23 +357,31 @@ function Preview({ data }: { data: EventData }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({ container: containerRef });
 
+    const theme = data.styles_json || {};
+    const globalBg = theme.background || '#fdf8f0';
+    const primary = theme.primary || '#a35d6a';
+    const secondary = theme.secondary || '#7B2D8B';
+    const font = theme.font || 'Playfair Display';
+
+    const getSectionStyle = (id: string) => {
+        const s = data.sections_styles?.[id] || {};
+        const bg = s.background || globalBg;
+        const txt = s.color || getOptimalTextColor(bg);
+        const textureUrl = TEXTURES.find(t => t.id === s.texture)?.url || '';
+        if (s.isVisible === false) return null;
+        return { bg, txt, textureUrl };
+    };
+
     const togglePlay = () => {
         if (!audioRef.current) return;
         if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
         else { audioRef.current.play().catch(e => console.log("Audio blocked", e)); setIsPlaying(true); }
     };
 
-    const theme = data.styles_json || {};
-    const bg = theme.background || '#fdf8f0';
-    const primary = theme.primary || '#a35d6a';
-    const secondary = theme.secondary || '#7B2D8B';
-    const font = theme.font || 'Playfair Display';
-
-    // Parallax Effects (Inside Editor Preview Container)
+    // Parallax
     const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
     const scaleHero = useTransform(scrollYProgress, [0, 0.2], [1, 1.1]);
 
-    // Load Font
     useEffect(() => {
         if (font) {
             const link = document.createElement('link');
@@ -283,8 +408,45 @@ function Preview({ data }: { data: EventData }) {
     };
 
     return (
-        <div ref={containerRef} className="w-full h-full flex flex-col items-center bg-white relative overflow-x-hidden overflow-y-auto no-scrollbar pb-32" style={{ background: bg, fontFamily: "'Montserrat', sans-serif", color: theme.text || '#2d1b2d' }}>
-            {data.music_url && (
+        <div ref={containerRef} className="w-full h-full flex flex-col items-center bg-white relative overflow-x-hidden overflow-y-auto no-scrollbar pb-32" style={{ background: globalBg, fontFamily: "'Montserrat', sans-serif", color: theme.text || '#2d1b2d' }}>
+            
+            <AnimatePresence>
+                {!envelopeOpen && (
+                    <motion.div 
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0, scale: 1.1, y: -100 }}
+                        className="absolute inset-0 z-[200] flex flex-col items-center justify-center p-8 bg-neutral-900 overflow-hidden"
+                    >
+                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(https://www.transparenttextures.com/patterns/black-linen.png)` }} />
+                        
+                        {/* 3D-ish Envelope Front */}
+                        <div className="relative w-full max-w-[280px] aspect-[4/3] group cursor-pointer" onClick={() => setEnvelopeOpen(true)}>
+                            <div className="absolute inset-0 bg-[#fdf8f0] rounded-xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border-t-[60px] border-l-[140px] border-r-[140px] border-b-[90px] border-transparent transition-transform duration-500 group-hover:scale-105"
+                                 style={{ borderBottomColor: '#f7f1e3', borderLeftColor: '#fdf8f0', borderRightColor: '#fdf8f0' }}>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full border-2 border-dashed border-[#a35d6a]/20 flex items-center justify-center bg-white">
+                                    <Heart size={20} className="text-[#a35d6a] fill-[#a35d6a]/10" />
+                                </div>
+                            </div>
+                            <div className="absolute -top-[1px] left-0 w-full h-[60px] bg-[#f7f1e3] origin-bottom transition-transform duration-700 group-hover:rotate-x-180" style={{ clipPath: 'polygon(0 0, 50% 100%, 100% 0)' }} />
+                        </div>
+
+                        <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setEnvelopeOpen(true)}
+                            className="mt-16 px-8 py-3 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl z-10"
+                        >
+                            {t.open}
+                        </motion.button>
+
+                        <div className="mt-6 text-center text-white/40">
+                            <p className="text-[8px] font-black uppercase tracking-widest leading-loose">Para:<br/>{data.title || 'Familia e Invitados'}</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {data.music_url && envelopeOpen && (
                 <>
                     <audio key={data.music_url} ref={audioRef} src={data.music_url} loop />
                     <button 
@@ -297,7 +459,7 @@ function Preview({ data }: { data: EventData }) {
                 </>
             )}
 
-            {/* Hero / Cover (Full Screen Inspired) */}
+            {/* Hero / Cover */}
             <div className="w-full h-[450px] relative shrink-0 overflow-hidden">
                 <motion.div style={{ opacity: opacityHero, scale: scaleHero }} className="absolute inset-0">
                     {data.cover_image_url ? (
@@ -309,7 +471,7 @@ function Preview({ data }: { data: EventData }) {
                         <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }} />
                     )}
                 </motion.div>
-                <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t" style={{ backgroundImage: `linear-gradient(to top, ${bg}, ${bg}E6 40%, transparent)` }} />
+                <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t" style={{ backgroundImage: `linear-gradient(to top, ${globalBg}, ${globalBg}E6 40%, transparent)` }} />
                 
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white z-10">
                     <motion.span initial={{ opacity: 0 }} animate={{ opacity: 0.8 }} className="text-[9px] font-black tracking-[0.4em] uppercase mb-4">{data.event_type || 'Invitación'}</motion.span>
@@ -317,175 +479,221 @@ function Preview({ data }: { data: EventData }) {
                 </div>
             </div>
 
-            <main className="w-full px-6 flex flex-col items-center gap-16 relative z-10 -mt-10 bg-white/40 backdrop-blur-sm rounded-t-[40px] border-t border-white/50">
+            <main className="w-full flex flex-col items-center relative z-10 -mt-10 bg-transparent rounded-t-[40px] overflow-hidden">
                 
-                {/* Parents/Blessing */}
-                <section className="pt-20 text-center w-full max-w-[300px]">
-                    {(data.parents_bride_father || data.parents_bride_mother || data.parents_groom_father || data.parents_groom_mother) && (
-                        <div className="flex flex-col gap-10">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 text-[#a35d6a]">{t.blessing}</span>
-                            <div className="space-y-8">
-                                {(data.parents_bride_father || data.parents_bride_mother) && (
-                                    <div className="space-y-2">
-                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{t.parents_bride}</p>
-                                        <p className="text-sm font-bold uppercase">{data.parents_bride_father_deceased && '✝'} {data.parents_bride_father}</p>
-                                        <p className="text-sm font-bold uppercase">{data.parents_bride_mother_deceased && '✝'} {data.parents_bride_mother}</p>
+                {/* 1. Parents/Blessing Section */}
+                {getSectionStyle('parents') && (
+                    <section className="pt-20 pb-16 px-6 relative w-full flex flex-col items-center" 
+                             style={{ backgroundColor: getSectionStyle('parents')?.bg, color: getSectionStyle('parents')?.txt }}>
+                        {getSectionStyle('parents')?.textureUrl && <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ backgroundImage: `url(${getSectionStyle('parents')?.textureUrl})` }} />}
+                        
+                        <div className="relative z-10 flex flex-col items-center gap-12 max-w-[300px] text-center">
+                            {(data.parents_bride_father || data.parents_bride_mother || data.parents_groom_father || data.parents_groom_mother) && (
+                                <div className="flex flex-col gap-10">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">{t.blessing}</span>
+                                    <div className="space-y-8">
+                                        {(data.parents_bride_father || data.parents_bride_mother) && (
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{t.parents_bride}</p>
+                                                <p className="text-sm font-bold uppercase">{data.parents_bride_father_deceased && '✝'} {data.parents_bride_father}</p>
+                                                <p className="text-sm font-bold uppercase">{data.parents_bride_mother_deceased && '✝'} {data.parents_bride_mother}</p>
+                                            </div>
+                                        )}
+                                        {(data.parents_bride_father || data.parents_bride_mother) && (data.parents_groom_father || data.parents_groom_mother) && <div className="w-8 h-[1px] opacity-20 mx-auto" style={{ backgroundColor: getSectionStyle('parents')?.txt }} />}
+                                        {(data.parents_groom_father || data.parents_groom_mother) && (
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{t.parents_groom}</p>
+                                                <p className="text-sm font-bold uppercase">{data.parents_groom_father_deceased && '✝'} {data.parents_groom_father}</p>
+                                                <p className="text-sm font-bold uppercase">{data.parents_groom_mother_deceased && '✝'} {data.parents_groom_mother}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                {(data.parents_bride_father || data.parents_bride_mother) && (data.parents_groom_father || data.parents_groom_mother) && <div className="w-8 h-[1px] bg-[#a35d6a]/20 mx-auto" />}
-                                {(data.parents_groom_father || data.parents_groom_mother) && (
-                                    <div className="space-y-2">
-                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-30">{t.parents_groom}</p>
-                                        <p className="text-sm font-bold uppercase">{data.parents_groom_father_deceased && '✝'} {data.parents_groom_father}</p>
-                                        <p className="text-sm font-bold uppercase">{data.parents_groom_mother_deceased && '✝'} {data.parents_groom_mother}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {data.message && (
-                        <div className="mt-12 p-8 rounded-[32px] bg-rose-50/50 border border-rose-100/50">
-                            <p className="text-xl font-serif italic opacity-80 leading-relaxed" style={{ fontFamily: `'${font}', serif` }}>"{data.message}"</p>
-                        </div>
-                    )}
-                </section>
-
-                {/* Venue & Time */}
-                <section className="w-full flex flex-col items-center text-center py-10 border-y border-[#a35d6a]/10">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 mb-6">{formatShortDate(data.event_date)}</p>
-                    <div className="space-y-2 mb-6">
-                        <h3 className="text-3xl font-black tracking-tight" style={{ color: primary }}>{data.venue || 'Salón / Lugar'}</h3>
-                        <p className="text-xs font-bold opacity-40 uppercase tracking-widest">{data.venue_address}</p>
-                    </div>
-                    {data.event_time && (
-                        <div className="px-4 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-[#a35d6a] text-[10px] font-black uppercase tracking-widest">
-                            {t.at} {formatTime(data.event_time)}
-                        </div>
-                    )}
-                </section>
-
-                {/* Dress Code */}
-                {data.dress_code && (
-                    <section className="flex flex-col items-center gap-8 py-10 w-full rounded-[40px] glass shadow-sm border border-white">
-                        <div className="text-center">
-                            <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-30 mb-3">{t.dress}</p>
-                            <p className="text-3xl font-bold italic mb-1" style={{ color: primary, fontFamily: `'${font}', serif` }}>{data.dress_code}</p>
-                            {data.dress_code_detail && <p className="text-[10px] opacity-40 max-w-[200px] mx-auto mt-2 leading-relaxed">{data.dress_code_detail}</p>}
-                        </div>
-
-                        {data.dress_code_icons_enabled && (
-                            <div className="flex gap-12">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full glass flex items-center justify-center shadow-lg border border-white">
-                                        <DressIcon type={data.dress_code_women} gender="women" size={40} />
-                                    </div>
-                                    <span className="text-[8px] font-black uppercase tracking-widest opacity-40">{t.women}</span>
                                 </div>
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full glass flex items-center justify-center shadow-lg border border-white">
-                                        <DressIcon type={data.dress_code_men} gender="men" size={40} />
-                                    </div>
-                                    <span className="text-[8px] font-black uppercase tracking-widest opacity-40">{t.men}</span>
+                            )}
+
+                            {data.message && (
+                                <div className="mt-4 p-8 rounded-[32px] border-2 border-dashed shadow-inner" style={{ borderColor: `${getSectionStyle('parents')?.txt}10` }}>
+                                    <p className="text-xl font-serif italic leading-relaxed opacity-90" style={{ fontFamily: `'${font}', serif` }}>"{data.message}"</p>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </section>
                 )}
 
-                {/* Itinerary */}
-                {data.itinerary_items && data.itinerary_items.length > 0 && (
-                    <section className="w-full space-y-12 py-10">
-                        <div className="text-center">
-                            <h3 className="text-[11px] font-black uppercase tracking-[0.5em] opacity-30">{t.itinerary}</h3>
+                {/* 2. Venue & Time Section */}
+                {getSectionStyle('venue') && (
+                    <section className="w-full flex flex-col items-center text-center py-20 px-6 relative" 
+                             style={{ backgroundColor: getSectionStyle('venue')?.bg, color: getSectionStyle('venue')?.txt }}>
+                        {getSectionStyle('venue')?.textureUrl && <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ backgroundImage: `url(${getSectionStyle('venue')?.textureUrl})` }} />}
+                        
+                        <div className="relative z-10 flex flex-col items-center w-full">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-8">{formatShortDate(data.event_date)}</p>
+                            <div className="space-y-4 mb-10">
+                                <h3 className="text-4xl font-black tracking-tighter uppercase drop-shadow-sm">{data.venue || 'Salón / Lugar'}</h3>
+                                <p className="text-[11px] font-bold opacity-30 uppercase tracking-[0.2em]">{data.venue_address}</p>
+                            </div>
+                            {data.event_time && (
+                                <div className="px-6 py-2 rounded-full border-2 text-[10px] font-black uppercase tracking-[0.3em] shadow-sm transform hover:scale-105 transition-transform" 
+                                     style={{ borderColor: `${getSectionStyle('venue')?.txt}20` }}>
+                                    {t.at} {formatTime(data.event_time)}
+                                </div>
+                            )}
                         </div>
-                        <div className="space-y-10 px-4">
-                            {data.itinerary_items.map((item: any, i: number) => (
-                                <div key={i} className="flex gap-6 items-start relative">
-                                    {i < data.itinerary_items.length - 1 && (
-                                        <div className="absolute left-[23px] top-14 bottom-[-40px] w-0.5 border-l-2 border-dashed border-[#a35d6a]/10" />
-                                    )}
-                                    <div className="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center shrink-0 border border-black/5 z-10 transition-transform hover:scale-110">
-                                        <div className="text-[#a35d6a]">
-                                            <ItineraryIcon id={item.icon} size={20} />
+                    </section>
+                )}
+
+                {/* 3. Dress Code Section */}
+                {data.dress_code && getSectionStyle('dressCode') && (
+                    <section className="flex flex-col items-center gap-12 py-24 px-6 w-full relative" 
+                             style={{ backgroundColor: getSectionStyle('dressCode')?.bg, color: getSectionStyle('dressCode')?.txt }}>
+                        {getSectionStyle('dressCode')?.textureUrl && <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ backgroundImage: `url(${getSectionStyle('dressCode')?.textureUrl})` }} />}
+                        
+                        <div className="relative z-10 flex flex-col items-center w-full gap-10">
+                            <div className="text-center">
+                                <p className="text-[9px] font-black uppercase tracking-[0.5em] opacity-30 mb-4">{t.dress}</p>
+                                <p className="text-4xl font-black tracking-tight mb-2" style={{ fontFamily: `'${font}', serif` }}>{data.dress_code}</p>
+                                {data.dress_code_detail && <p className="text-[11px] opacity-40 max-w-[240px] mx-auto mt-3 leading-[1.6] italic font-medium">{data.dress_code_detail}</p>}
+                            </div>
+
+                            {data.dress_code_icons_enabled && (
+                                <div className="flex gap-16">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-20 h-20 rounded-[2rem] bg-white/40 backdrop-blur-md flex items-center justify-center shadow-xl border border-white/50 group hover:scale-110 transition-transform">
+                                            <DressIcon type={data.dress_code_women} gender="women" size={45} color={primary} />
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">{t.women}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-20 h-20 rounded-[2rem] bg-white/40 backdrop-blur-md flex items-center justify-center shadow-xl border border-white/50 group hover:scale-110 transition-transform">
+                                            <DressIcon type={data.dress_code_men} gender="men" size={45} color={primary} />
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">{t.men}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                {/* 4. Itinerary Section */}
+                {data.itinerary_items && data.itinerary_items.length > 0 && getSectionStyle('itinerary') && (
+                    <section className="w-full flex flex-col items-center py-24 px-8 relative" 
+                             style={{ backgroundColor: getSectionStyle('itinerary')?.bg, color: getSectionStyle('itinerary')?.txt }}>
+                        {getSectionStyle('itinerary')?.textureUrl && <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ backgroundImage: `url(${getSectionStyle('itinerary')?.textureUrl})` }} />}
+                        
+                        <div className="relative z-10 w-full max-w-[400px]">
+                            <div className="text-center mb-16">
+                                <h3 className="text-[12px] font-black uppercase tracking-[0.6em] opacity-30">{t.itinerary}</h3>
+                            </div>
+                            <div className="space-y-12">
+                                {data.itinerary_items.map((item: any, i: number) => (
+                                    <div key={i} className="flex gap-8 items-start relative group">
+                                        {i < data.itinerary_items.length - 1 && (
+                                            <div className="absolute left-[27.5px] top-16 bottom-[-48px] w-0.5 border-l-2 border-dashed opacity-10" style={{ borderColor: getSectionStyle('itinerary')?.txt }} />
+                                        )}
+                                        <div className="w-14 h-14 rounded-3xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-center shrink-0 border border-white z-10 transition-transform group-hover:scale-110 group-hover:rotate-6">
+                                            <div style={{ color: primary }}>
+                                                <ItineraryIcon id={item.icon} size={24} />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5 pt-2 text-left flex-1">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mb-1">{item.time}</p>
+                                            <p className="text-md font-black tracking-tighter uppercase">{item.name}</p>
+                                            {item.description && <p className="text-[11px] opacity-40 leading-relaxed font-medium mt-0.5">{item.description}</p>}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-0.5 pt-1 text-left flex-1">
-                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-30 mb-0.5">{item.time}</p>
-                                        <p className="text-sm font-black tracking-tight">{item.name}</p>
-                                        {item.description && <p className="text-[10px] text-gray-500 leading-relaxed line-clamp-2">{item.description}</p>}
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </section>
                 )}
 
-                {/* Gallery */}
-                {data.gallery_urls && data.gallery_urls.length > 0 && (
-                    <section className="w-full space-y-8 py-10">
-                        <h3 className="text-center text-[10px] font-black uppercase tracking-[0.4em] opacity-30">{t.gallery}</h3>
-                        <div className="grid grid-cols-2 gap-3 px-2">
-                            {data.gallery_urls.map((url: string, i: number) => (
-                                <div key={i} className={`aspect-[4/5] rounded-[32px] overflow-hidden shadow-premium border-[3px] border-white transform ${i % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}>
-                                    <img src={url} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* Gift Registry */}
-                {data.gift_registry_enabled && (
-                    <section className="w-[90%] p-10 rounded-[48px] border-2 border-dashed flex flex-col items-center gap-6 group transition-all mb-10" style={{ borderColor: `${primary}15`, background: `${primary}05` }}>
-                        <div className="w-16 h-16 rounded-3xl bg-white shadow-xl flex items-center justify-center rotate-12 transition-transform">
-                            <Gift size={32} style={{ color: primary }} />
-                        </div>
-                        <div className="text-center space-y-2">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">{t.gift}</h4>
-                            <p className="text-[10px] opacity-40 max-w-[200px] leading-relaxed italic">{t.gift_msg}</p>
-                        </div>
+                {/* 5. Gallery Section */}
+                {data.gallery_urls && data.gallery_urls.length > 0 && getSectionStyle('gallery') && (
+                    <section className="w-full flex flex-col items-center py-24 px-6 relative" 
+                             style={{ backgroundColor: getSectionStyle('gallery')?.bg, color: getSectionStyle('gallery')?.txt }}>
+                        {getSectionStyle('gallery')?.textureUrl && <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ backgroundImage: `url(${getSectionStyle('gallery')?.textureUrl})` }} />}
                         
-                        {data.gift_registry_type === 'link' && (
-                            <div className="w-full py-4 rounded-2xl bg-black text-white text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
-                                <ExternalLink size={14} /> Ver Mesa
+                        <div className="relative z-10 w-full">
+                            <h3 className="text-center text-[10px] font-black uppercase tracking-[0.5em] opacity-30 mb-16">{t.gallery}</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                {data.gallery_urls.map((url: string, i: number) => (
+                                    <div key={i} className={`aspect-[3/4] rounded-[2.5rem] overflow-hidden shadow-2xl border-[6px] border-white transform hover:scale-105 transition-all duration-500 ${i % 2 === 0 ? '-rotate-2' : 'rotate-2 translate-y-8'}`}>
+                                        <img src={url} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
+                                    </div>
+                                ))}
                             </div>
-                        )}
-
-                        {data.gift_registry_type === 'code' && (
-                            <div className="w-full py-4 rounded-2xl border-2 bg-white flex flex-col items-center justify-center gap-1 shadow-sm" style={{ borderColor: `${primary}10` }}>
-                                <span className="text-[8px] font-black opacity-30 uppercase">{t.code}</span>
-                                <span className="text-lg font-black tracking-tight" style={{ color: primary }}>{data.gift_registry_code}</span>
-                            </div>
-                        )}
-
-                        {data.gift_registry_type === 'envelope' && (
-                            <div className="text-center">
-                                <p className="text-[10px] font-black italic mb-1" style={{ color: primary }}>{t.envelope}</p>
-                                <p className="text-[9px] opacity-30 uppercase max-w-[150px] mx-auto leading-tight">{t.envelope_msg}</p>
-                            </div>
-                        )}
+                        </div>
                     </section>
                 )}
 
-                {/* Adults Only */}
+                {/* 6. Gift Registry Section */}
+                {data.gift_registry_enabled && getSectionStyle('gift') && (
+                    <section className="w-full flex flex-col items-center py-24 px-8 relative" 
+                             style={{ backgroundColor: getSectionStyle('gift')?.bg, color: getSectionStyle('gift')?.txt }}>
+                        {getSectionStyle('gift')?.textureUrl && <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ backgroundImage: `url(${getSectionStyle('gift')?.textureUrl})` }} />}
+                        
+                        <div className="relative z-10 w-full p-12 rounded-[4rem] border-2 border-dashed flex flex-col items-center gap-10 group transition-all" 
+                             style={{ borderColor: `${getSectionStyle('gift')?.txt}15`, background: `${getSectionStyle('gift')?.txt}03` }}>
+                            
+                            <div className="w-20 h-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center rotate-12 transition-transform group-hover:rotate-0">
+                                <Gift size={36} style={{ color: primary }} />
+                            </div>
+                            <div className="text-center space-y-3">
+                                <h4 className="text-[11px] font-black uppercase tracking-[0.4em] opacity-30">{t.gift}</h4>
+                                <p className="text-[11px] opacity-40 max-w-[240px] leading-relaxed italic font-medium">{t.gift_msg}</p>
+                            </div>
+                            
+                            {data.gift_registry_type === 'link' && (
+                                <div className="w-full py-5 rounded-[2rem] bg-black text-white text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform">
+                                    <ExternalLink size={16} /> Ver Mesa
+                                </div>
+                            )}
+
+                            {data.gift_registry_type === 'code' && (
+                                <div className="w-full py-6 rounded-[2rem] border-2 bg-white flex flex-col items-center justify-center gap-1 shadow-sm" style={{ borderColor: `${primary}10` }}>
+                                    <span className="text-[9px] font-black opacity-30 uppercase">{t.code}</span>
+                                    <span className="text-2xl font-black tracking-tighter" style={{ color: primary }}>{data.gift_registry_code}</span>
+                                </div>
+                            )}
+
+                            {data.gift_registry_type === 'envelope' && (
+                                <div className="text-center">
+                                    <p className="text-[12px] font-black italic mb-2 uppercase tracking-widest" style={{ color: primary }}>{t.envelope}</p>
+                                    <p className="text-[10px] opacity-30 uppercase max-w-[180px] mx-auto leading-tight font-bold">{t.envelope_msg}</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                {/* Footer / Adults Only */}
                 {data.adults_only && (
-                    <div className="pb-20 opacity-40">
-                        <div className="flex items-center gap-3 px-6 py-2 rounded-full border border-rose-100 bg-white/50">
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#a35d6a]" />
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.adults}</span>
+                    <div className="w-full py-20 flex justify-center opacity-30">
+                        <div className="flex items-center gap-4 px-8 py-3 rounded-full border border-black/5 bg-white/40 shadow-sm backdrop-blur-sm">
+                            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: primary }} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">{t.adults}</span>
                         </div>
                     </div>
                 )}
             </main>
 
-            {/* RSVP Sticky Action */}
-            <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-8">
-                <div className="w-full max-w-[280px] h-14 rounded-full bg-black text-white flex items-center justify-center gap-3 font-black text-[11px] uppercase tracking-widest shadow-2xl">
-                    <CheckCircle2 size={18} /> {t.rsvp}
+            {/* RSVP Sticky */}
+            {envelopeOpen && (
+                <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center px-8">
+                    <motion.div 
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="w-full max-w-[300px] h-16 rounded-full bg-black text-white flex items-center justify-center gap-4 font-black text-[12px] uppercase tracking-[0.3em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.5)] active:scale-95 transition-transform"
+                    >
+                        <CheckCircle2 size={20} /> {t.rsvp}
+                    </motion.div>
                 </div>
-            </div>
+            )}
         </div>
+    );
+}
+
     );
 }
 
@@ -1144,6 +1352,7 @@ export default function EditorPage() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <SectionStylePicker sectionId="parents" data={eventData} onUpdate={update} />
                                             </div>
                                         </div>
                                     )}
@@ -1200,6 +1409,7 @@ export default function EditorPage() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <SectionStylePicker sectionId="invitation" data={eventData} onUpdate={update} />
                                             </div>
                                         </div>
                                     )}
@@ -1279,6 +1489,7 @@ export default function EditorPage() {
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <SectionStylePicker sectionId="venue" data={eventData} onUpdate={update} />
                                             </div>
                                         </div>
                                     )}
@@ -1323,7 +1534,7 @@ export default function EditorPage() {
                                                                     </select>
                                                                     {eventData.dress_code_women && (
                                                                         <div className="bg-white border rounded-2xl p-2 flex items-center justify-center h-16 shadow-sm">
-                                                                            <DressIcon type={eventData.dress_code_women} gender="women" size={40} />
+                                                                            <DressIcon type={eventData.dress_code_women} gender="women" size={40} color={eventData.styles_json?.primary || '#a35d6a'} />
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1339,7 +1550,7 @@ export default function EditorPage() {
                                                                     </select>
                                                                     {eventData.dress_code_men && (
                                                                         <div className="bg-white border rounded-2xl p-2 flex items-center justify-center h-16 shadow-sm">
-                                                                            <DressIcon type={eventData.dress_code_men} gender="men" size={40} />
+                                                                            <DressIcon type={eventData.dress_code_men} gender="men" size={40} color={eventData.styles_json?.primary || '#a35d6a'} />
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1347,6 +1558,7 @@ export default function EditorPage() {
                                                         </div>
                                                     </div>
                                                 )}
+                                                <SectionStylePicker sectionId="dressCode" data={eventData} onUpdate={update} />
                                             </div>
                                         </div>
                                     )}
@@ -1502,6 +1714,7 @@ export default function EditorPage() {
                                                         </div>
                                                     )}
                                                 </div>
+                                                <SectionStylePicker sectionId="itinerary" data={eventData} onUpdate={update} />
                                             </div>
                                         </div>
                                     )}
@@ -1527,6 +1740,7 @@ export default function EditorPage() {
                                                         <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => e.target.files && handleGalleryUpload(e.target.files)} />
                                                     </label>
                                                 </div>
+                                                <SectionStylePicker sectionId="gallery" data={eventData} onUpdate={update} />
                                             </div>
                                         </div>
                                     )}
@@ -1585,6 +1799,9 @@ export default function EditorPage() {
                                                             <p className="text-[10px] text-[#a35d6a] font-bold uppercase tracking-tight">Se mostrará un mensaje para recepción de efectivo el día del evento.</p>
                                                         </div>
                                                     )}
+                                                </div>
+                                                <div className="pt-4 border-t border-rose-50">
+                                                    <SectionStylePicker sectionId="gift" data={eventData} onUpdate={update} />
                                                 </div>
                                             )}
                                         </div>
