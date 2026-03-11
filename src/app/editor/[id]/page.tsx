@@ -65,6 +65,11 @@ interface EventData {
     dress_code_women: string;
     dress_code_men: string;
     dress_code_icons_enabled: boolean;
+    // Section: Regalos
+    gift_registry_enabled: boolean;
+    gift_registry_type: 'link' | 'code' | 'envelope';
+    gift_registry_code: string;
+    gift_registry_url: string;
     // Security and Access
     security_enabled: boolean;
     password_enabled: boolean;
@@ -187,8 +192,50 @@ function DressIcon({ type, gender, size = 32 }: { type: string; gender: 'women' 
 function Preview({ data }: { data: EventData }) {
     const lang = data.language === 'en' ? 'en' : 'es';
     const t = {
-        es: { parents: 'Nuestros Padres', godparents: 'Nuestros Padrinos', blessing: 'Con la bendición de Dios', date: 'Fecha', venue: 'Lugar', dress: 'Código de Vestimenta', adults: 'Solo Adultos', women: 'Damas', men: 'Caballeros', gallery: 'Galería de Fotos' },
-        en: { parents: 'Our Parents', godparents: 'Godparents', blessing: 'With Gods blessing', date: 'Date', venue: 'Venue', dress: 'Dress Code', adults: 'Adults Only', women: 'Ladies', men: 'Gentlemen', gallery: 'Photo Gallery' }
+        es: { 
+            parents: 'Nuestros Padres', 
+            parents_bride: 'Padres de la Novia',
+            parents_groom: 'Padres del Novio',
+            godparents: 'Nuestros Padrinos', 
+            blessing: 'Con la bendición de Dios', 
+            date: 'Fecha', 
+            venue: 'Lugar', 
+            dress: 'Código de Vestimenta', 
+            adults: 'Solo Adultos', 
+            women: 'Damas', 
+            men: 'Caballeros', 
+            gallery: 'Galería de Fotos',
+            invitation: 'Invitación',
+            itinerary: 'Itinerario',
+            gift: 'Mesa de Regalos',
+            gift_msg: 'Tu presencia es nuestro mejor regalo, pero si deseas obsequiarnos algo:',
+            envelope: 'Lluvia de Sobres',
+            envelope_msg: 'Agradecemos tu detalle en efectivo el día del evento.',
+            code: 'Código:',
+            add_calendar: 'Añadir al Calendario'
+        },
+        en: { 
+            parents: 'Our Parents', 
+            parents_bride: 'Parents of the Bride',
+            parents_groom: 'Parents of the Groom',
+            godparents: 'Godparents', 
+            blessing: 'With God\'s blessing', 
+            date: 'Date', 
+            venue: 'Venue', 
+            dress: 'Dress Code', 
+            adults: 'Adults Only', 
+            women: 'Ladies', 
+            men: 'Gentlemen', 
+            gallery: 'Photo Gallery',
+            invitation: 'Invitation',
+            itinerary: 'Itinerary',
+            gift: 'Gift Registry',
+            gift_msg: 'Your presence is our best gift, but if you wish to give us something:',
+            envelope: 'Envelope Shower',
+            envelope_msg: 'We appreciate your cash gift on the day of the event.',
+            code: 'Code:',
+            add_calendar: 'Add to Calendar'
+        }
     }[lang];
 
     const [isPlaying, setIsPlaying] = useState(false);
@@ -245,7 +292,7 @@ function Preview({ data }: { data: EventData }) {
         <div className="w-full min-h-full flex flex-col items-center bg-white relative overflow-x-hidden pb-20" style={{ background: bg, fontFamily: `'${font}', serif`, color: theme.text || '#2d1b2d' }}>
             {data.music_url && (
                 <>
-                    <audio ref={audioRef} src={data.music_url} loop />
+                    <audio key={data.music_url} ref={audioRef} src={data.music_url} loop />
                     <button 
                         onClick={togglePlay}
                         className="fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border border-black/5"
@@ -277,22 +324,30 @@ function Preview({ data }: { data: EventData }) {
             </div>
 
             <div className="px-6 py-10 w-full flex flex-col items-center gap-6 -mt-32 relative z-10 backdrop-blur-sm rounded-t-[50px] transition-all duration-700" style={{ borderColor: `${primary}20` }}>
-                <span className="text-[9px] font-black tracking-[0.4em] uppercase opacity-40" style={{ color: primary }}>{lang === 'en' ? 'Invitation' : 'Invitación'}</span>
+                <span className="text-[9px] font-black tracking-[0.4em] uppercase opacity-40" style={{ color: primary }}>{t.invitation}</span>
                 <h1 className="text-3xl font-bold leading-tight uppercase text-center animate-fade-in" style={{ color: primary, fontFamily: `'${font}', serif` }}>{data.title || 'Título del Evento'}</h1>
 
                 {(data.parents_bride_father || data.parents_bride_mother || data.parents_groom_father || data.parents_groom_mother) && (
                     <div className="flex flex-col gap-4 text-center mt-2">
                         <p className="text-[10px] italic opacity-50" style={{ color: theme.text }}>{t.blessing}</p>
                         <div className="space-y-3">
-                            <div>
-                                {data.parents_bride_father && <p className="text-xs font-bold uppercase">{data.parents_bride_father_deceased && '✝'} {data.parents_bride_father}</p>}
-                                {data.parents_bride_mother && <p className="text-xs font-bold uppercase">{data.parents_bride_mother_deceased && '✝'} {data.parents_bride_mother}</p>}
-                            </div>
-                            <div className="w-6 h-[1px] mx-auto opacity-20" style={{ backgroundColor: primary }} />
-                            <div>
-                                {data.parents_groom_father && <p className="text-xs font-bold uppercase">{data.parents_groom_father_deceased && '✝'} {data.parents_groom_father}</p>}
-                                {data.parents_groom_mother && <p className="text-xs font-bold uppercase">{data.parents_groom_mother_deceased && '✝'} {data.parents_groom_mother}</p>}
-                            </div>
+                            {(data.parents_bride_father || data.parents_bride_mother) && (
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">{t.parents_bride}</p>
+                                    {data.parents_bride_father && <p className="text-xs font-bold uppercase">{data.parents_bride_father_deceased && '✝'} {data.parents_bride_father}</p>}
+                                    {data.parents_bride_mother && <p className="text-xs font-bold uppercase">{data.parents_bride_mother_deceased && '✝'} {data.parents_bride_mother}</p>}
+                                </div>
+                            )}
+                            {(data.parents_bride_father || data.parents_bride_mother) && (data.parents_groom_father || data.parents_groom_mother) && (
+                                <div className="w-6 h-[1px] mx-auto opacity-20" style={{ backgroundColor: primary }} />
+                            )}
+                            {(data.parents_groom_father || data.parents_groom_mother) && (
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">{t.parents_groom}</p>
+                                    {data.parents_groom_father && <p className="text-xs font-bold uppercase">{data.parents_groom_father_deceased && '✝'} {data.parents_groom_father}</p>}
+                                    {data.parents_groom_mother && <p className="text-xs font-bold uppercase">{data.parents_groom_mother_deceased && '✝'} {data.parents_groom_mother}</p>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -310,7 +365,7 @@ function Preview({ data }: { data: EventData }) {
 
                     {data.calendar_enabled && (
                         <button className="mt-2 px-6 py-2.5 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-black hover:text-white transition-all shadow-sm" style={{ borderColor: `${primary}30`, color: primary }}>
-                            <Calendar size={12} /> {lang === 'en' ? 'Add to Calendar' : 'Añadir al Calendario'}
+                            <Calendar size={12} /> {t.add_calendar}
                         </button>
                     )}
                 </div>
@@ -351,7 +406,7 @@ function Preview({ data }: { data: EventData }) {
                         <div className="w-full space-y-8 mt-6">
                             <div className="flex flex-col items-center gap-2">
                                 <div className="w-8 h-[1px] opacity-20" style={{ backgroundColor: primary }} />
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40" style={{ color: primary }}>{lang === 'en' ? 'Itinerary' : 'Itinerario'}</h3>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40" style={{ color: primary }}>{t.itinerary}</h3>
                             </div>
                             <div className="flex flex-col gap-8 px-4">
                                 {data.itinerary_items.map((item, i) => (
@@ -395,6 +450,38 @@ function Preview({ data }: { data: EventData }) {
                             {t.adults}
                         </div>
                     )}
+
+                    {data.gift_registry_enabled && (
+                        <div className="mt-16 w-[90%] p-10 rounded-[40px] border-2 border-dashed flex flex-col items-center gap-6 group transition-all" style={{ borderColor: `${primary}15`, background: `${primary}05` }}>
+                            <div className="w-16 h-16 rounded-3xl bg-white shadow-xl flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform">
+                                <Gift size={32} style={{ color: primary }} />
+                            </div>
+                            <div className="text-center space-y-2">
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">{t.gift}</h4>
+                                <p className="text-xs opacity-60 max-w-[200px] leading-relaxed italic">{t.gift_msg}</p>
+                            </div>
+                            
+                            {data.gift_registry_type === 'link' && data.gift_registry_url && (
+                                <a href={data.gift_registry_url} target="_blank" className="w-full py-4 rounded-2xl bg-black text-white text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all">
+                                    <ExternalLink size={14} /> {lang === 'en' ? 'Open Registry' : 'Ver Mesa'}
+                                </a>
+                            )}
+
+                            {data.gift_registry_type === 'code' && data.gift_registry_code && (
+                                <div className="w-full py-4 rounded-2xl border-2 bg-white flex flex-col items-center justify-center gap-1 shadow-sm" style={{ borderColor: `${primary}20` }}>
+                                    <span className="text-[9px] font-black opacity-30 uppercase">{t.code}</span>
+                                    <span className="text-xl font-bold tracking-tight" style={{ color: primary }}>{data.gift_registry_code}</span>
+                                </div>
+                            )}
+
+                            {data.gift_registry_type === 'envelope' && (
+                                <div className="text-center">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest leading-loose" style={{ color: primary }}>{t.envelope}</p>
+                                    <p className="text-[9px] opacity-40 uppercase max-w-[180px] mx-auto">{t.envelope_msg}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -436,6 +523,7 @@ export default function EditorPage() {
     const [isGeneratingTheme, setIsGeneratingTheme] = useState(false);
     const [themePrompt, setThemePrompt] = useState('');
     const [generatedTheme, setGeneratedTheme] = useState<Theme | null>(null);
+    const [rsvpCount, setRsvpCount] = useState(0);
 
     const [openSections, setOpenSections] = useState({
         info: true,
@@ -471,6 +559,15 @@ export default function EditorPage() {
         } else {
             setEventData(data);
             setIsPublished(data.is_published);
+            
+            // Fetch RSVP count
+            const { count } = await supabase
+                .from('rsvp')
+                .select('*', { count: 'exact', head: true })
+                .eq('event_id', params.id)
+                .eq('status', 'confirmed');
+            
+            setRsvpCount(count || 0);
         }
         setLoading(false);
     }, [params.id, router]);
@@ -757,8 +854,11 @@ export default function EditorPage() {
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* ── DESKTOP SIDEBAR ────────────────────────────────────────── */}
-                <aside className="hidden md:flex flex-col w-[90px] bg-[#1a0f1a] border-r border-white/5 z-40 items-center py-10 gap-10 shadow-[20px_0_50px_-10px_rgba(0,0,0,0.3)]">
-                    <div className="w-12 h-12 rounded-[1.2rem] bg-gradient-to-br from-rose-500/20 to-purple-500/20 flex items-center justify-center text-rose-300 mb-2 border border-rose-500/10 shadow-inner">
+                <aside 
+                    className="hidden md:flex flex-col w-[90px] border-r border-white/5 z-40 items-center py-10 gap-10 shadow-2xl"
+                    style={{ background: 'linear-gradient(180deg, #2d1b2d 0%, #1a0f1a 100%)' }}
+                >
+                    <div className="w-12 h-12 rounded-[1.2rem] bg-white/5 flex items-center justify-center text-white/80 mb-2 border border-white/10 shadow-sm">
                         <Wand2 size={24} className="animate-pulse" />
                     </div>
                     
@@ -799,14 +899,19 @@ export default function EditorPage() {
                                     }}
                                     className={`group relative flex flex-col items-center gap-1.5 p-4 rounded-2xl transition-all duration-300 ${
                                         isActive 
-                                            ? 'bg-gradient-to-br from-rose-500/20 to-purple-600/20 text-white shadow-[0_0_20px_rgba(244,63,94,0.1)] border border-rose-500/20 active:scale-95' 
-                                            : 'text-white/30 hover:text-white/60 hover:bg-white/5 active:scale-95'
+                                            ? 'bg-white/10 text-white shadow-xl shadow-black/20 border border-white/10 active:scale-95' 
+                                            : 'text-white/40 hover:text-white/70 hover:bg-white/5 active:scale-95'
                                     }`}
                                 >
                                     {item.icon}
                                     <span className={`text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}`}>
                                         {item.label}
                                     </span>
+                                    {item.id === 'rsvp' && rsvpCount > 0 && (
+                                        <div className="absolute top-2 right-2 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[7px] font-bold shadow-lg shadow-rose-900/50 animate-scale-in">
+                                            {rsvpCount}
+                                        </div>
+                                    )}
                                 </button>
                             );
                         })}
@@ -863,8 +968,13 @@ export default function EditorPage() {
                                         ].map((item) => {
                                             if (item.href) {
                                                 return (
-                                                    <Link key={item.id} href={item.href} className="flex items-center gap-3 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest text-[#7a5060]/70 hover:bg-rose-50 hover:text-[#a35d6a] transition-all">
+                                                    <Link key={item.id} href={item.href} className="relative flex items-center gap-3 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest text-[#7a5060]/70 hover:bg-rose-50 hover:text-[#a35d6a] transition-all group">
                                                         {item.icon} {item.label}
+                                                        {item.id === 'rsvp' && rsvpCount > 0 && (
+                                                            <span className="ml-auto w-5 h-5 flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-bold shadow-sm">
+                                                                {rsvpCount}
+                                                            </span>
+                                                        )}
                                                     </Link>
                                                 );
                                             }
@@ -1403,6 +1513,65 @@ export default function EditorPage() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* 7. Mesa de Regalos */}
+                                <div className={`transition-all duration-500 ${openSections.extra ? 'my-6 mx-2 rounded-[2.5rem] border-2 bg-white shadow-2xl shadow-[#a35d6a]/10 overflow-hidden ring-4 ring-rose-50/50' : 'border-b'} `} style={{ borderColor: openSections.extra ? '#a35d6a20' : borderColor }}>
+                                    <SectionHeader icon={<Gift size={15} />} title="Mesa de regalos" open={openSections.extra} onToggle={() => toggleSection('extra')} />
+                                    {openSections.extra && (
+                                        <div className="px-6 pb-12 pt-2 flex flex-col gap-6 animate-fade-in text-left">
+                                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-[10px] font-black text-[#7a5060] uppercase tracking-wider">Activar Regalos</span>
+                                                    <span className="text-[9px] text-gray-400 font-bold uppercase">Mesa o efectivo</span>
+                                                </div>
+                                                <button onClick={() => update('gift_registry_enabled', !eventData.gift_registry_enabled)} className={`w-10 h-5 rounded-full p-1 transition-colors relative ${eventData.gift_registry_enabled ? 'bg-[#a35d6a]' : 'bg-gray-200'}`}>
+                                                    <div className={`w-3 h-3 bg-white rounded-full transition-transform ${eventData.gift_registry_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+
+                                            {eventData.gift_registry_enabled && (
+                                                <div className="space-y-6 animate-fade-in">
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {[
+                                                            { id: 'link', label: 'Link', icon: <ExternalLink size={12} /> },
+                                                            { id: 'code', label: 'Código', icon: <Hash size={12} /> },
+                                                            { id: 'envelope', label: 'Sobres', icon: <FileText size={12} /> }
+                                                        ].map(type => (
+                                                            <button
+                                                                key={type.id}
+                                                                onClick={() => update('gift_registry_type', type.id as any)}
+                                                                className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${eventData.gift_registry_type === type.id ? 'border-[#a35d6a] bg-rose-50 text-[#a35d6a]' : 'border-gray-50 bg-white text-gray-400 hover:border-rose-100'}`}
+                                                            >
+                                                                {type.icon}
+                                                                <span className="text-[9px] font-bold uppercase">{type.label}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {eventData.gift_registry_type === 'link' && (
+                                                        <div className="flex flex-col gap-2">
+                                                            <label className="text-[10px] font-bold text-[#a35d6a] uppercase tracking-widest px-1">Enlace de la Mesa</label>
+                                                            <input value={eventData.gift_registry_url || ''} onChange={(e) => update('gift_registry_url', e.target.value)} placeholder="https://mexico.liverpool.com.mx/mesa-de-regalos/..." className={inputCls} />
+                                                        </div>
+                                                    )}
+
+                                                    {eventData.gift_registry_type === 'code' && (
+                                                        <div className="flex flex-col gap-2">
+                                                            <label className="text-[10px] font-bold text-[#a35d6a] uppercase tracking-widest px-1">Número de Evento / Código</label>
+                                                            <input value={eventData.gift_registry_code || ''} onChange={(e) => update('gift_registry_code', e.target.value)} placeholder="Ej: 50493821" className={inputCls} />
+                                                        </div>
+                                                    )}
+
+                                                    {eventData.gift_registry_type === 'envelope' && (
+                                                        <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100 text-center">
+                                                            <p className="text-[10px] text-[#a35d6a] font-bold uppercase tracking-tight">Se mostrará un mensaje para recepción de efectivo el día del evento.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </motion.div>
                         )}
@@ -1478,24 +1647,24 @@ export default function EditorPage() {
                                 <SectionHeader icon={<Target size={15} />} title="Temas ya creados" open={openSections.templates} onToggle={() => toggleSection('templates')} />
                                 {openSections.templates && (
                                     <div className="px-6 pb-8 pt-2 animate-fade-in">
-                                        <div className="grid grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-4 gap-2">
                                             {PRESET_THEMES.map((theme, i) => (
                                                 <button
                                                     key={i}
                                                     onClick={() => update('styles_json', theme)}
-                                                    className={`group relative aspect-[4/5] rounded-2xl overflow-hidden border-2 transition-all hover:scale-[1.05] active:scale-95 ${eventData.styles_json?.style === theme.style ? 'border-[#a35d6a] shadow-lg shadow-[#a35d6a]/20' : 'border-gray-100'}`}
+                                                    className={`group relative aspect-square rounded-xl overflow-hidden border-[3px] transition-all hover:scale-[1.05] active:scale-95 ${eventData.styles_json?.style === theme.style ? 'border-[#a35d6a] shadow-md shadow-[#a35d6a]/20' : 'border-gray-200'}`}
                                                 >
                                                     <div className="absolute inset-0 bg-white" style={{ background: theme.background }} />
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-2">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight" style={{ color: theme.primary }}>{theme.style}</span>
-                                                        <div className="flex gap-1">
-                                                            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: theme.primary }} />
-                                                            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: theme.secondary }} />
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-2 gap-1">
+                                                        <span className="text-[8px] font-black uppercase tracking-tighter text-center leading-none opacity-40" style={{ color: theme.primary }}>{theme.style}</span>
+                                                        <div className="flex gap-0.5 mt-1">
+                                                            <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: theme.primary }} />
+                                                            <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: theme.secondary }} />
                                                         </div>
                                                     </div>
                                                     {eventData.styles_json?.style === theme.style && (
-                                                        <div className="absolute top-3 right-3 w-5 h-5 bg-[#a35d6a] rounded-full flex items-center justify-center text-white shadow-lg">
-                                                            <CheckCircle2 size={12} />
+                                                        <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#a35d6a] rounded-full flex items-center justify-center text-white shadow-lg">
+                                                            <CheckCircle2 size={10} />
                                                         </div>
                                                     )}
                                                 </button>
@@ -1726,12 +1895,20 @@ export default function EditorPage() {
                                 <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
                                 <span className="text-[10px] font-bold text-[#a35d6a] uppercase tracking-widest whitespace-nowrap">Vista previa interactiva</span>
                             </div>
-                            <div className="mt-4 flex flex-col items-center gap-1 group/link cursor-pointer hover:bg-rose-50 px-4 py-2 rounded-xl transition-all">
+                             <button 
+                                onClick={() => {
+                                    const baseUrl = window.location.origin.includes('localhost') 
+                                        ? 'https://giovis-app-invitaciones.vercel.app' 
+                                        : window.location.origin;
+                                    window.open(`${baseUrl}/invite/${eventData.slug}`, '_blank');
+                                }}
+                                className="mt-4 flex flex-col items-center gap-1 group/link cursor-pointer hover:bg-rose-50 px-4 py-2 rounded-xl transition-all"
+                            >
                                 <ExternalLink size={10} className="text-[#a35d6a] opacity-0 group-hover/link:opacity-100 transition-opacity" />
                                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter group-hover/link:text-[#a35d6a] transition-colors flex items-center gap-1">
                                     Ver pantalla completa
                                 </span>
-                            </div>
+                            </button>
                         </div>
                     </div>
                 </div>
