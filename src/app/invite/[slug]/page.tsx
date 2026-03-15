@@ -7,17 +7,37 @@ import {
     MapPin, Calendar, CheckCircle2, X, Loader2, Music, Volume2, VolumeX, 
     Navigation, ExternalLink, Gift, Clock, Camera, Shield, QrCode, Phone, 
     Plus, Heart, Church, Car, Cake, Utensils, IceCream, Flower2, Wine, Trash2,
-    Hash, FileText, Share2, Globe, Sparkles
+    Hash, FileText, Share2, Globe, Sparkles, Quote
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { toast } from 'sonner';
 import { QRCodeCanvas } from 'qrcode.react';
+import { injectData } from '@/lib/template-injector';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+const TEXTURES = [
+    { id: 'none', name: 'Ninguno', url: '' },
+    { id: 'linen', name: 'Lino Fino', url: '/textures/linen.png' },
+    { id: 'cotton', name: 'Papel Algodón', url: '/textures/cotton.png' },
+    { id: 'marble', name: 'Mármol Carrara', url: '/textures/marble.png' },
+    { id: 'vintage', name: 'Pergamino Viejos', url: '/textures/parchment.png' },
+    { id: 'silk', name: 'Seda Real', url: '/textures/silk.png' },
+    { id: 'watercolor', name: 'Acuarela', url: '/textures/watercolor.png' }
+];
+
+const getOptimalTextColor = (hex: string) => {
+    if (!hex) return '#2d1b2d';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? '#2d1b2d' : '#fdf8f0';
+};
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface EventData {
@@ -63,6 +83,8 @@ interface EventData {
     adults_only: boolean;
     calendar_enabled: boolean;
     itinerary_items: { name: string; time: string; icon: string; description?: string }[];
+    sections_styles: Record<string, any>;
+    template_id?: string;
 }
 
 interface RSVP {
@@ -500,6 +522,24 @@ export default function InvitePage() {
     const headerFont = theme.font || 'Playfair Display';
     const bg = theme.background || '#fdf8f0';
 
+    const getSectionStyle = (id: string) => {
+        if (!event) return null;
+        const s = (event.sections_styles?.[id] || {}) as any;
+        if (s.isVisible === false) return null;
+        const sectionBg = s.background || bg;
+        const sectionTxt = s.color || getOptimalTextColor(sectionBg);
+        const textureUrl = TEXTURES.find(t => t.id === s.texture)?.url || '';
+        return { 
+            bg: sectionBg, 
+            txt: sectionTxt, 
+            textureUrl,
+            bgImage: s.bgImage || '',
+            bgSize: s.bgSize || 'cover',
+            bgOpacity: s.bgOpacity ?? 100,
+            borderRadius: s.borderRadius ?? 0
+        };
+    };
+
     const formatDate = (dateStr: string) => {
         if (!dateStr) return '';
         const date = new Date(dateStr + 'T12:00:00');
@@ -515,6 +555,18 @@ export default function InvitePage() {
         const h12 = hour % 12 || 12;
         return `${h12}:${m} ${ampm}`;
     };
+
+    if (event.template_id) {
+        return (
+            <div className="fixed inset-0 w-full h-full bg-white">
+                <iframe 
+                    srcDoc={injectData(event.template_id, event as any)}
+                    className="w-full h-full border-none"
+                    title="Invitación"
+                />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -552,11 +604,13 @@ export default function InvitePage() {
                         {event.cover_image_url ? (
                             <>
                                 <img src={event.cover_image_url} alt="Cover" className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30" />
                             </>
                         ) : (
                             <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }} />
                         )}
+                        {/* Smooth Transition Overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t z-10" style={{ backgroundImage: `linear-gradient(to top, ${getSectionStyle('personal')?.bg || '#fdf8f0'}, transparent)` }} />
                     </motion.div>
 
                     <div className="relative z-10 flex flex-col items-center px-8 text-center text-white">
@@ -595,49 +649,79 @@ export default function InvitePage() {
                 </header>
 
                 {/* MAIN CONTENT AREA */}
-                <main className="relative z-20 -mt-16 rounded-t-[60px] glass border-t border-white/40 pb-40">
+                <main className="relative z-20 bg-transparent pb-40">
                     
                     {/* WEDDING QUOTE / BLESSING */}
-                    <section className="pt-24 pb-20 px-8 text-center flex flex-col items-center">
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
-                            {(event.parents_bride_father || event.parents_bride_mother || event.parents_groom_father || event.parents_groom_mother) && (
-                                <div className="space-y-8 mb-16">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#a35d6a] mb-6">{t.blessing}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-2xl mx-auto">
-                                        <div className="space-y-3">
-                                            <p className="text-[10px] uppercase tracking-widest opacity-40 font-black">{t.parents_bride}</p>
-                                            <div className="space-y-1">
-                                                {event.parents_bride_father && <p className="text-lg font-bold uppercase">{event.parents_bride_father_deceased && '✝'} {event.parents_bride_father}</p>}
-                                                {event.parents_bride_mother && <p className="text-lg font-bold uppercase">{event.parents_bride_mother_deceased && '✝'} {event.parents_bride_mother}</p>}
+                    {getSectionStyle('personal') && (
+                        <section className="pt-32 pb-32 px-8 relative text-center flex flex-col items-center overflow-hidden" 
+                                 style={{ color: getSectionStyle('personal')?.txt }}>
+
+                            {/* Editorial Frame Overlay */}
+                            <div className="absolute inset-4 sm:inset-10 border border-current opacity-5 pointer-events-none z-20" />
+                            
+                            {/* Background Layer */}
+                            <div 
+                                className="absolute inset-0 pointer-events-none transition-all duration-700"
+                                style={{ 
+                                    backgroundColor: getSectionStyle('personal')?.bg, 
+                                    backgroundImage: (getSectionStyle('personal')?.bgImage || getSectionStyle('personal')?.textureUrl) 
+                                        ? `url(${getSectionStyle('personal')?.bgImage || getSectionStyle('personal')?.textureUrl})` 
+                                        : undefined,
+                                    backgroundSize: getSectionStyle('personal')?.bgImage ? getSectionStyle('personal')?.bgSize : (getSectionStyle('personal')?.textureUrl ? '180px' : 'cover'),
+                                    backgroundRepeat: 'repeat',
+                                    backgroundBlendMode: getSectionStyle('personal')?.textureUrl ? 'multiply' : 'normal',
+                                    opacity: getSectionStyle('personal')?.textureUrl ? 0.15 : ((getSectionStyle('personal')?.bgOpacity ?? 100) / 100),
+                                    filter: getSectionStyle('personal')?.textureUrl ? 'contrast(1.1) brightness(0.95)' : 'none',
+                                }} 
+                            />
+
+                            <div className="relative z-30 w-full flex flex-col items-center max-w-2xl px-6">
+                                <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
+                                    {(event.parents_bride_father || event.parents_bride_mother || event.parents_groom_father || event.parents_groom_mother) && (
+                                        <div className="flex flex-col items-center w-full mb-20">
+                                            <motion.h3 initial={{ opacity: 0 }} whileInView={{ opacity: 0.4 }} className="text-[10px] font-black uppercase tracking-[0.6em] mb-16">{t.blessing}</motion.h3>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 w-full text-center">
+                                                <div className="space-y-6">
+                                                    <p className="text-[10px] uppercase tracking-[0.3em] opacity-30 font-bold">{t.parents_bride}</p>
+                                                    <div className="flex flex-col gap-2">
+                                                        {event.parents_bride_father && <p className="text-2xl font-black uppercase tracking-tight">{event.parents_bride_father_deceased && '✝'} {event.parents_bride_father}</p>}
+                                                        {event.parents_bride_mother && <p className="text-2xl font-black uppercase tracking-tight">{event.parents_bride_mother_deceased && '✝'} {event.parents_bride_mother}</p>}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-6">
+                                                    <p className="text-[10px] uppercase tracking-[0.3em] opacity-30 font-bold">{t.parents_groom}</p>
+                                                    <div className="flex flex-col gap-2">
+                                                        {event.parents_groom_father && <p className="text-2xl font-black uppercase tracking-tight">{event.parents_groom_father_deceased && '✝'} {event.parents_groom_father}</p>}
+                                                        {event.parents_groom_mother && <p className="text-2xl font-black uppercase tracking-tight">{event.parents_groom_mother_deceased && '✝'} {event.parents_groom_mother}</p>}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <p className="text-[10px] uppercase tracking-widest opacity-40 font-black">{t.parents_groom}</p>
-                                            <div className="space-y-1">
-                                                {event.parents_groom_father && <p className="text-lg font-bold uppercase">{event.parents_groom_father_deceased && '✝'} {event.parents_groom_father}</p>}
-                                                {event.parents_groom_mother && <p className="text-lg font-bold uppercase">{event.parents_groom_mother_deceased && '✝'} {event.parents_groom_mother}</p>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {event.godparents && (
-                                        <div className="pt-8">
-                                            <p className="text-[10px] uppercase tracking-widest opacity-40 font-black mb-3">{t.godparents}</p>
-                                            <p className="text-xl font-bold uppercase tracking-tight">{event.godparents}</p>
+
+                                            {event.godparents && (
+                                                <div className="flex flex-col items-center mt-16">
+                                                    <div className="w-12 h-[1px] bg-current opacity-10 mb-8" />
+                                                    <p className="text-[9px] uppercase tracking-widest opacity-30 font-bold mb-3">{t.godparents}</p>
+                                                    <p className="text-xl font-black uppercase tracking-tight">{event.godparents}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
-                                </div>
-                            )}
 
-                            {event.message && (
-                                <div className="max-w-xl mx-auto italic py-10 px-8 rounded-[40px] bg-rose-50/30 border border-rose-100/50 shadow-inner">
-                                    <Sparkles size={24} className="mx-auto mb-6 text-[#a35d6a]/20" />
-                                    <p className="text-2xl font-serif leading-relaxed opacity-80" style={{ fontFamily: `'${headerFont}', serif` }}>
-                                        "{event.message}"
-                                    </p>
-                                </div>
-                            )}
-                        </motion.div>
-                    </section>
+                                    {event.message && (
+                                        <div className="flex flex-col items-center gap-10 relative text-center w-full">
+                                            <div className="w-16 h-[1px] opacity-10" style={{ backgroundColor: getSectionStyle('personal')?.txt }} />
+                                            <Quote size={32} className="opacity-10" />
+                                            <p className="text-2xl md:text-3xl font-serif italic leading-[1.6] opacity-90 max-w-md mx-auto" style={{ fontFamily: `'${headerFont}', serif` }}>
+                                                "{event.message}"
+                                            </p>
+                                            <div className="w-16 h-[1px] opacity-10 mx-auto" style={{ backgroundColor: getSectionStyle('personal')?.txt }} />
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </div>
+                        </section>
+                    )}
 
                     {/* COUNTDOWN SECTION */}
                     <section className="py-20 flex flex-col items-center">
@@ -660,9 +744,28 @@ export default function InvitePage() {
                     </section>
 
                     {/* LOCATION & VENUE */}
-                    <section className="py-24 px-8">
-                        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="max-w-sm mx-auto">
-                            <div className="p-10 rounded-[56px] text-center flex flex-col items-center shadow-premium border border-white glass">
+                    {getSectionStyle('info') && (
+                        <section className="py-24 px-8 relative overflow-hidden" 
+                                 style={{ color: getSectionStyle('info')?.txt }}> 
+                            
+                            {/* Background Layer */}
+                            <div 
+                                className="absolute inset-0 pointer-events-none transition-all duration-700"
+                                style={{ 
+                                    backgroundColor: getSectionStyle('info')?.bg, 
+                                    backgroundImage: (getSectionStyle('info')?.bgImage || getSectionStyle('info')?.textureUrl) 
+                                        ? `url(${getSectionStyle('info')?.bgImage || getSectionStyle('info')?.textureUrl})` 
+                                        : undefined,
+                                    backgroundSize: getSectionStyle('info')?.bgImage ? getSectionStyle('info')?.bgSize : (getSectionStyle('info')?.textureUrl ? '180px' : 'cover'),
+                                    backgroundRepeat: 'repeat',
+                                    backgroundBlendMode: getSectionStyle('info')?.textureUrl ? 'multiply' : 'normal',
+                                    opacity: getSectionStyle('info')?.textureUrl ? 0.15 : ((getSectionStyle('info')?.bgOpacity ?? 100) / 100),
+                                    filter: getSectionStyle('info')?.textureUrl ? 'contrast(1.1) brightness(0.95)' : 'none',
+                                }} 
+                            />
+
+                            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="max-w-sm mx-auto relative z-10">
+                                <div className="p-10 rounded-[56px] text-center flex flex-col items-center shadow-premium border border-white glass" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(12px)' }}>
                                 <div className="w-16 h-16 rounded-[24px] flex items-center justify-center mb-6 shadow-lg bg-white text-[#a35d6a] rotate-12">
                                     <MapPin size={32} />
                                 </div>
@@ -699,12 +802,31 @@ export default function InvitePage() {
                                 </div>
                             </div>
                         </motion.div>
-                    </section>
+                        </section>
+                    )}
 
                     {/* ITINERARY (PREMIUM LIST) */}
-                    {event.itinerary_items && event.itinerary_items.length > 0 && (
-                        <section className="py-24 px-8 max-w-md mx-auto">
-                            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+                    {event.itinerary_items && event.itinerary_items.length > 0 && getSectionStyle('itinerary') && (
+                        <section className="py-24 px-8 relative overflow-hidden" 
+                                 style={{ color: getSectionStyle('itinerary')?.txt }}> 
+                            
+                            {/* Background Layer */}
+                            <div 
+                                className="absolute inset-0 pointer-events-none transition-all duration-700"
+                                style={{ 
+                                    backgroundColor: getSectionStyle('itinerary')?.bg, 
+                                    backgroundImage: (getSectionStyle('itinerary')?.bgImage || getSectionStyle('itinerary')?.textureUrl) 
+                                        ? `url(${getSectionStyle('itinerary')?.bgImage || getSectionStyle('itinerary')?.textureUrl})` 
+                                        : undefined,
+                                    backgroundSize: getSectionStyle('itinerary')?.bgImage ? getSectionStyle('itinerary')?.bgSize : (getSectionStyle('itinerary')?.textureUrl ? '180px' : 'cover'),
+                                    backgroundRepeat: 'repeat',
+                                    backgroundBlendMode: getSectionStyle('itinerary')?.textureUrl ? 'multiply' : 'normal',
+                                    opacity: getSectionStyle('itinerary')?.textureUrl ? 0.15 : ((getSectionStyle('itinerary')?.bgOpacity ?? 100) / 100),
+                                    filter: getSectionStyle('itinerary')?.textureUrl ? 'contrast(1.1) brightness(0.95)' : 'none',
+                                }} 
+                            />
+
+                            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="max-w-md mx-auto relative z-10">
                                 <div className="text-center mb-16">
                                     <h3 className="text-[11px] font-black uppercase tracking-[0.5em] opacity-40 mb-4">{t.itinerary}</h3>
                                     <div className="w-12 h-1 bg-[#a35d6a] rounded-full mx-auto" />
@@ -744,9 +866,27 @@ export default function InvitePage() {
                     )}
 
                     {/* DRESS CODE */}
-                    {event.dress_code && (
-                        <section className="py-24 px-8">
-                            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-sm mx-auto glass p-12 rounded-[56px] text-center border border-white shadow-premium">
+                    {event.dress_code && getSectionStyle('dressCode') && (
+                        <section className="py-24 px-8 relative overflow-hidden" 
+                                 style={{ color: getSectionStyle('dressCode')?.txt }}>
+                            
+                            {/* Background Layer */}
+                            <div 
+                                className="absolute inset-0 pointer-events-none transition-all duration-700"
+                                style={{ 
+                                    backgroundColor: getSectionStyle('dressCode')?.bg, 
+                                    backgroundImage: (getSectionStyle('dressCode')?.bgImage || getSectionStyle('dressCode')?.textureUrl) 
+                                        ? `url(${getSectionStyle('dressCode')?.bgImage || getSectionStyle('dressCode')?.textureUrl})` 
+                                        : undefined,
+                                    backgroundSize: getSectionStyle('dressCode')?.bgImage ? getSectionStyle('dressCode')?.bgSize : (getSectionStyle('dressCode')?.textureUrl ? '180px' : 'cover'),
+                                    backgroundRepeat: 'repeat',
+                                    backgroundBlendMode: getSectionStyle('dressCode')?.textureUrl ? 'multiply' : 'normal',
+                                    opacity: getSectionStyle('dressCode')?.textureUrl ? 0.15 : ((getSectionStyle('dressCode')?.bgOpacity ?? 100) / 100),
+                                    filter: getSectionStyle('dressCode')?.textureUrl ? 'contrast(1.1) brightness(0.95)' : 'none',
+                                }} 
+                            />
+
+                            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-sm mx-auto glass p-12 rounded-[56px] text-center border border-white shadow-premium relative z-10" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(12px)' }}>
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 mb-4">{t.dressCode}</h4>
                                 <p className="text-4xl font-bold italic mb-3" style={{ color: primary, fontFamily: `'${headerFont}', serif` }}>{event.dress_code}</p>
                                 {event.dress_code_detail && <p className="text-xs font-medium opacity-50 mb-10 px-4 leading-relaxed">{event.dress_code_detail}</p>}
@@ -774,15 +914,33 @@ export default function InvitePage() {
                     )}
 
                     {/* GALLERY */}
-                    {event.gallery_urls && event.gallery_urls.length > 0 && (
-                        <section className="py-24 px-4 overflow-hidden">
-                            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+                    {event.gallery_urls && event.gallery_urls.length > 0 && getSectionStyle('gallery') && (
+                        <section className="py-24 px-4 relative overflow-hidden" 
+                                 style={{ color: getSectionStyle('gallery')?.txt }}>
+                            
+                            {/* Background Layer */}
+                            <div 
+                                className="absolute inset-0 pointer-events-none transition-all duration-700"
+                                style={{ 
+                                    backgroundColor: getSectionStyle('gallery')?.bg, 
+                                    backgroundImage: (getSectionStyle('gallery')?.bgImage || getSectionStyle('gallery')?.textureUrl) 
+                                        ? `url(${getSectionStyle('gallery')?.bgImage || getSectionStyle('gallery')?.textureUrl})` 
+                                        : undefined,
+                                    backgroundSize: getSectionStyle('gallery')?.bgImage ? getSectionStyle('gallery')?.bgSize : (getSectionStyle('gallery')?.textureUrl ? '180px' : 'cover'),
+                                    backgroundRepeat: 'repeat',
+                                    backgroundBlendMode: getSectionStyle('gallery')?.textureUrl ? 'multiply' : 'normal',
+                                    opacity: getSectionStyle('gallery')?.textureUrl ? 0.15 : ((getSectionStyle('gallery')?.bgOpacity ?? 100) / 100),
+                                    filter: getSectionStyle('gallery')?.textureUrl ? 'contrast(1.1) brightness(0.95)' : 'none',
+                                }} 
+                            />
+
+                            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="relative z-10 w-full px-4">
                                 <div className="text-center mb-12">
                                     <h3 className="text-[11px] font-black uppercase tracking-[0.5em] opacity-40 mb-2">{t.galleryTitle}</h3>
                                     <div className="w-8 h-1 bg-[#a35d6a] rounded-full mx-auto" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    {event.gallery_urls.map((url, i) => (
+                                    {event.gallery_urls?.map((url, i) => (
                                         <motion.div 
                                             key={i} 
                                             whileHover={{ scale: 1.05, rotate: 0 }}
@@ -797,13 +955,32 @@ export default function InvitePage() {
                     )}
 
                     {/* GIFT REGISTRY (ENHANCED) */}
-                    {event.gift_registry_enabled && (
-                        <section className="py-24 px-8">
+                    {event.gift_registry_enabled && getSectionStyle('gift') && (
+                        <section className="py-24 px-8 relative overflow-hidden" 
+                                 style={{ color: getSectionStyle('gift')?.txt }}>
+                            
+                            {/* Background Layer */}
+                            <div 
+                                className="absolute inset-0 pointer-events-none transition-all duration-700"
+                                style={{ 
+                                    backgroundColor: getSectionStyle('gift')?.bg, 
+                                    backgroundImage: (getSectionStyle('gift')?.bgImage || getSectionStyle('gift')?.textureUrl) 
+                                        ? `url(${getSectionStyle('gift')?.bgImage || getSectionStyle('gift')?.textureUrl})` 
+                                        : undefined,
+                                    backgroundSize: getSectionStyle('gift')?.bgImage ? getSectionStyle('gift')?.bgSize : (getSectionStyle('gift')?.textureUrl ? '180px' : 'cover'),
+                                    backgroundRepeat: 'repeat',
+                                    backgroundBlendMode: getSectionStyle('gift')?.textureUrl ? 'multiply' : 'normal',
+                                    opacity: getSectionStyle('gift')?.textureUrl ? 0.15 : ((getSectionStyle('gift')?.bgOpacity ?? 100) / 100),
+                                    filter: getSectionStyle('gift')?.textureUrl ? 'contrast(1.1) brightness(0.95)' : 'none',
+                                }} 
+                            />
+
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.95 }} 
                                 whileInView={{ opacity: 1, scale: 1 }} 
                                 viewport={{ once: true }}
-                                className="max-w-sm mx-auto p-12 rounded-[56px] glass border border-white text-center flex flex-col items-center gap-8 relative overflow-hidden group shadow-premium"
+                                className="max-w-sm mx-auto p-12 rounded-[56px] glass border border-white text-center flex flex-col items-center gap-8 relative overflow-hidden group shadow-premium z-10"
+                                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(12px)' }}
                             >
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-rose-200/20 blur-3xl rounded-full -mr-16 -mt-16" />
                                 <div className="w-20 h-20 rounded-[28px] bg-white shadow-xl flex items-center justify-center text-[#a35d6a] rotate-12 group-hover:rotate-0 transition-transform duration-500">

@@ -33,6 +33,7 @@ interface GuestInfo {
         is_checked_in: boolean;
         checked_in_at: string | null;
         confirmed_members_json: string[];
+        companions: number | null;
     } | null;
 }
 
@@ -113,7 +114,7 @@ export default function ReceptionScanner() {
     const fetchGuestData = async (token: string) => {
         const { data: g, error } = await supabase
             .from('guests')
-            .select('*, rsvp(status, is_checked_in, checked_in_at, confirmed_members_json)')
+            .select('*, rsvp(status, is_checked_in, checked_in_at, confirmed_members_json, companions)')
             .eq('invitation_token', token)
             .eq('event_id', eventId)
             .single();

@@ -28,6 +28,7 @@ interface Event {
     created_at: string;
     views: number;
     guests_count?: number;
+    plan?: string;
 }
 
 // ─── Sidebar ───────────────────────────────────────────────────────────────
@@ -140,8 +141,24 @@ function EventCard({ event }: { event: Event }) {
                     <PartyPopper size={32} style={{ color }} />
                 </div>
             )}
-            <div className="absolute top-3 left-3 flex gap-1.5">
+            <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
                 <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-black/5 uppercase tracking-tighter" style={{ color }}>{event.event_type}</span>
+                
+                {(() => {
+                    const p = event.plan || 'prueba';
+                    const config = {
+                        prueba: { label: 'Prueba', bg: 'bg-gray-100 text-gray-600' },
+                        basico: { label: 'Plata', bg: 'bg-slate-100 text-slate-700 font-bold' },
+                        rsvp: { label: 'Oro', bg: 'bg-amber-50 text-amber-600 border border-amber-200' },
+                        diamante: { label: 'Diamante', bg: 'bg-purple-50 text-purple-600 border border-purple-200' }
+                    }[p as 'prueba'|'basico'|'rsvp'|'diamante'] || { label: 'Prueba', bg: 'bg-gray-100 text-gray-600' };
+
+                    return (
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm border border-black/5 uppercase tracking-tighter backdrop-blur-md ${config.bg}`}>
+                            {config.label}
+                        </span>
+                    );
+                })()}
             </div>
             <div className="absolute top-3 right-3">
                 <span className="text-[9px] font-black px-2 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-black/5 uppercase tracking-tighter" style={{ color: event.is_published ? '#059669' : '#d97706' }}>
@@ -169,9 +186,9 @@ function EventCard({ event }: { event: Event }) {
             <div className="flex gap-2">
                 <Link
                     href={`/editor/${event.id}`}
-                    className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-black uppercase py-2.5 px-3 rounded-xl transition-all hover:scale-[1.02] shadow-sm tracking-widest bg-gradient-to-r from-[#a35d6a] to-[#7B2D8B] text-white"
+                    className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-black uppercase py-2.5 px-3 rounded-xl transition-all hover:scale-[1.02] shadow-sm tracking-widest bg-[#a35d6a] text-white hover:bg-[#723a46]"
                 >
-                    <Pencil size={11} /> Editar
+                    <Pencil size={11} /> Editar Diseño
                 </Link>
                 <Link
                     href={`/dashboard/rsvp/${event.id}`}

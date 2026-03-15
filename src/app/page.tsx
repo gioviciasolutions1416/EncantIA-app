@@ -368,7 +368,7 @@ export default function Home() {
               </div>
               <ul className="space-y-2.5 mb-6 flex-grow">
                 {["Todo lo de Plata, más:", "Cuenta regresiva", "Canción (Música)", "Eventos múltiples", "1 imagen por evento", "Hasta 6 fotos de galería", "Itinerario detallado"].map((f, i) => (
-                  <li key={i} className="flex gap-2.5 text-[13px] font-bold text-[#2d1b2d] leading-tight">
+                  <li key={i} className="flex gap-2.5 font-bold text-[#2d1b2d] leading-tight" style={{ fontSize: 13 }}>
                     <Check size={16} className="text-[#a35d6a] flex-shrink-0 mt-0.5" /> {f}
                   </li>
                 ))}

@@ -137,7 +137,7 @@ export default function NuevoEventoPage() {
 
             setSuccess(true);
             setTimeout(() => {
-                router.push(`/editor/${data.id}`);
+                router.push('/dashboard');
             }, 1200);
         } catch (err: unknown) {
             console.error('Error al crear evento:', err);
@@ -165,7 +165,7 @@ export default function NuevoEventoPage() {
                     >
                         ¡Evento creado!
                     </h2>
-                    <p className="text-sm text-[#7a5060]">Redirigiendo al editor…</p>
+                    <p className="text-sm text-[#7a5060]">Redirigiendo al dashboard…</p>
                 </div>
             </div>
         );
@@ -383,7 +383,7 @@ export default function NuevoEventoPage() {
                                 <h3 className="text-lg font-bold text-[#2d1b2d] mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>Recuerda que...</h3>
                                 <ul className="space-y-4">
                                     {[
-                                        { text: "Puedes cambiar el diseño cuantas veces quieras en el editor." },
+                                        { text: "Tu información se guarda de forma segura." },
                                         { text: "Tu evento es privado por defecto hasta que lo publiques." },
                                         { text: "Agregaremos una ubicación interactiva automáticamente." }
                                     ].map((tip, i) => (

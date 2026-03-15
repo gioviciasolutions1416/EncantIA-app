@@ -2,8 +2,11 @@ import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
+    let eventType = 'Boda';
     try {
-        const { prompt, eventType } = await req.json();
+        const body = await req.json();
+        eventType = body.eventType || 'Boda';
+        const { prompt } = body;
 
         const client = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
