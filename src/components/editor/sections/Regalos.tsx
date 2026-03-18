@@ -11,41 +11,40 @@ import {
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+const POPULAR_SHOPS = [
+  'Liverpool', 
+  'Amazon', 
+  'El Palacio de Hierro', 
+  'Coppel', 
+  'Sears'
+];
 
 export default function Regalos() {
   const { eventData, updateField } = useEditor();
   
   const isEnabled = eventData.gift_registry_enabled ?? true;
-  const config = eventData.gift_registry_config || {
-    message: 'Nuestra mayor alegría es contar con su presencia, pero si desean tener un detalle con nosotros, estas son nuestras sugerencias.',
-    links: [
-      { name: 'Mesa de Regalos Amazon', url: '' },
-      { name: 'Mesa de Regalos Liverpool', url: '' }
-    ]
+  const regalos = eventData.regalos_list || [];
+
+  const updateRegalos = (newList: any[]) => {
+    updateField('regalos_list', newList);
   };
 
-  const updateConfig = (field: string, value: any) => {
-    updateField('gift_registry_config', {
-      ...config,
-      [field]: value
-    });
+  const addTienda = (nombre: string = '', url: string = '') => {
+    updateRegalos([...regalos, { nombre, url }]);
   };
 
-  const addLink = () => {
-    const links = [...(config.links || [])];
-    links.push({ name: '', url: '' });
-    updateConfig('links', links);
+  const removeTienda = (index: number) => {
+    updateRegalos(regalos.filter((_: any, i: number) => i !== index));
   };
 
-  const removeLink = (index: number) => {
-    const links = config.links.filter((_: any, i: number) => i !== index);
-    updateConfig('links', links);
+  const updateTienda = (index: number, field: string, value: string) => {
+    const list = [...regalos];
+    list[index] = { ...list[index], [field]: value };
+    updateRegalos(list);
   };
 
-  const updateLink = (index: number, field: string, value: string) => {
-    const links = [...config.links];
-    links[index] = { ...links[index], [field]: value };
-    updateConfig('links', links);
+  const addPopularShop = (nombre: string) => {
+    addTienda(nombre, '');
   };
 
   return (
@@ -93,12 +92,30 @@ export default function Regalos() {
               </label>
               <div className="bg-white border border-rose-100 p-5 rounded-[2rem] shadow-sm">
                 <textarea
-                  value={config.message || ''}
-                  onChange={(e) => updateConfig('message', e.target.value)}
+                  value={eventData.gift_message || ''}
+                  onChange={(e) => updateField('gift_message', e.target.value)}
                   placeholder="Ej: Su presencia es nuestro mejor regalo..."
                   rows={3}
                   className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#7a5060] placeholder:text-rose-200 resize-none"
                 />
+              </div>
+            </section>
+
+            {/* ── TIENDAS POPULARES RÁPIDAS ── */}
+            <section className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1">
+                Agregar Rápido
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {POPULAR_SHOPS.map((shop) => (
+                  <button
+                    key={shop}
+                    onClick={() => addPopularShop(shop)}
+                    className="px-3 py-2 bg-white border border-rose-100/60 rounded-xl text-[10px] font-bold text-[#a35d6a] hover:bg-rose-50 hover:border-rose-200 transition-all flex items-center gap-1 shadow-sm active:scale-95"
+                  >
+                    <Plus size={12} /> {shop}
+                  </button>
+                ))}
               </div>
             </section>
 
@@ -109,15 +126,15 @@ export default function Regalos() {
                   <ShoppingBag size={14} /> Tiendas y Enlaces
                 </label>
                 <button
-                  onClick={addLink}
+                  onClick={() => addTienda()}
                   className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-[#a35d6a] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-colors"
                 >
-                  <Plus size={14} /> Agregar
+                  <Plus size={14} /> Agregar Tienda
                 </button>
               </div>
 
               <div className="space-y-3">
-                {config.links.map((link: any, index: number) => (
+                {regalos.map((link: any, index: number) => (
                   <motion.div
                     key={index}
                     layout
@@ -128,13 +145,13 @@ export default function Regalos() {
                     <div className="flex items-center justify-between gap-2">
                       <input
                         type="text"
-                        value={link.name}
-                        onChange={(e) => updateLink(index, 'name', e.target.value)}
+                        value={link.nombre || ''}
+                        onChange={(e) => updateTienda(index, 'nombre', e.target.value)}
                         placeholder="Nombre de la tienda (ej: Amazon)"
                         className="flex-1 bg-[#fdfafc] border-none focus:ring-1 focus:ring-rose-100 rounded-lg p-2 text-xs font-black text-[#2d1b2d]"
                       />
                       <button
-                        onClick={() => removeLink(index)}
+                        onClick={() => removeTienda(index)}
                         className="p-2 text-rose-200 hover:text-red-400 transition-colors"
                       >
                         <Trash2 size={16} />
@@ -146,8 +163,8 @@ export default function Regalos() {
                       </div>
                       <input
                         type="url"
-                        value={link.url}
-                        onChange={(e) => updateLink(index, 'url', e.target.value)}
+                        value={link.url || ''}
+                        onChange={(e) => updateTienda(index, 'url', e.target.value)}
                         placeholder="https://..."
                         className="flex-1 bg-transparent border-b border-rose-50 p-2 text-[11px] font-medium text-gray-500 focus:border-[#a35d6a] outline-none transition-colors"
                       />

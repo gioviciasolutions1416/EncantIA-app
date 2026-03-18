@@ -1,0 +1,38 @@
+﻿ D build_output.txt
+ D check_cols.mjs
+ D check_db.mjs
+ D check_rsvps.mjs
+ D list_events.mjs
+ M src/app/api/generate-theme/route.ts
+ M src/app/dashboard/nuevo/page.tsx
+ M src/app/dashboard/page.tsx
+ M src/app/dashboard/scan/[eventId]/page.tsx
+ M src/app/editor/[id]/page.tsx
+ M src/app/invite/[slug]/page.tsx
+ M src/app/page.tsx
+ M src/lib/supabase.ts
+ D verify_all_events.mjs
+?? compile_errors.txt
+?? create_buckets.js
+?? create_buckets_clean.js
+?? create_test_event.js
+?? fix_encoding.js
+?? fix_style_and_base.js
+?? lint_errors.txt
+?? list_buckets.js
+?? map_variables.js
+?? public/textures/
+?? src/components/
+?? src/context/
+?? src/hooks/
+?? src/lib/editor-supabase.ts
+?? src/lib/template-injector.ts
+?? src/templates/
+?? status.txt
+?? test_upload_file.js
+?? tmp_dashboard.html
+?? tmp_get_events.js
+?? ts_errors.txt
+?? tsc.log
+?? tsc_errors.txt
+?? update_templates.js

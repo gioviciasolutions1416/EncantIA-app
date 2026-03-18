@@ -5,11 +5,13 @@ import { useEditor } from '@/context/EditorContext';
 import { 
   Settings, Users, MessageSquare, Calendar, Shirt, 
   Clock, Gift, Image as ImageIcon, Hotel, CheckCircle2, 
-  PenTool, Music, BarChart3, Share2, Lock, X, Eye, Phone, Palette, Sparkles, Grid, Pencil
+  PenTool, Music, BarChart3, Share2, Lock, X, Eye, Phone, Palette, Sparkles, Grid, Pencil,
+  Bold, Italic, AlignLeft, AlignCenter, AlignRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { injectData } from '@/lib/template-injector';
 import DesignPanel from './DesignPanel';
+import { SECCIONES_POR_EVENTO } from '@/config/event-sections';
 
 const MOBILE_TABS = [
   { id: 'evento', label: 'Evento', icon: Calendar, sections: ['configuracion', 'fecha_lugar'] },
@@ -23,12 +25,12 @@ const SECTIONS = [
   { id: 'configuracion', icon: Settings, label: 'Configuración', plan: 'prueba' },
   { id: 'protagonistas', icon: Users, label: 'Protagonistas', plan: 'prueba' },
   { id: 'mensajes', icon: MessageSquare, label: 'Mensajes', plan: 'prueba' },
-  { id: 'fecha_lugar', icon: Calendar, label: 'Fecha y Lugar', plan: 'basico' },
-  { id: 'vestimenta', icon: Shirt, label: 'Vestimenta', plan: 'basico' },
-  { id: 'distribucion', icon: Share2, label: 'Distribución', plan: 'basico' },
-  { id: 'itinerario', icon: Clock, label: 'Itinerario', plan: 'rsvp' },
-  { id: 'galeria', icon: ImageIcon, label: 'Galería', plan: 'rsvp' },
-  { id: 'confirmacion', icon: CheckCircle2, label: 'RSVP', plan: 'rsvp' },
+  { id: 'fecha_lugar', icon: Calendar, label: 'Fecha y Lugar', plan: 'plata' },
+  { id: 'vestimenta', icon: Shirt, label: 'Vestimenta', plan: 'plata' },
+  { id: 'distribucion', icon: Share2, label: 'Distribución', plan: 'plata' },
+  { id: 'itinerario', icon: Clock, label: 'Itinerario', plan: 'oro' },
+  { id: 'galeria', icon: ImageIcon, label: 'Galería', plan: 'oro' },
+  { id: 'confirmacion', icon: CheckCircle2, label: 'RSVP', plan: 'oro' },
   { id: 'regalos', icon: Gift, label: 'Regalos', plan: 'diamante' },
   { id: 'hospedaje', icon: Hotel, label: 'Hospedaje', plan: 'diamante' },
   { id: 'musica', icon: Music, label: 'Música', plan: 'diamante' },
@@ -38,8 +40,8 @@ const SECTIONS = [
 
 const PLAN_HIERARCHY = {
   prueba: 0,
-  basico: 1,
-  rsvp: 2,
+  plata: 1,
+  oro: 2,
   diamante: 3,
 };
 
@@ -48,9 +50,68 @@ interface EditorShellProps {
 }
 
 export default function EditorShell({ children }: EditorShellProps) {
-  const { activeSection, setActiveSection, eventData, showMobilePreview, setShowMobilePreview, showDesignPanel, setShowDesignPanel } = useEditor();
+  const { activeSection, setActiveSection, eventData, showMobilePreview, setShowMobilePreview, showDesignPanel, setShowDesignPanel, effectivePlan, profile } = useEditor();
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [activeTabDrawer, setActiveTabDrawer] = useState<string | null>(null);
+
+  // ── TOOLBAR FLOTANTE ──
+  const [floatingToolbar, setFloatingToolbar] = useState<{
+    visible: boolean;
+    top: number;
+    left: number;
+    field: string;
+  }>({ visible: false, top: 0, left: 0, field: '' });
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'TEXT_SELECTION') {
+        const iframeEl = iframeRef.current;
+        if (!iframeEl) return;
+        const iframeRect = iframeEl.getBoundingClientRect();
+        setFloatingToolbar({
+          visible: true,
+          top: iframeRect.top + e.data.rect.top - 48,
+          left: iframeRect.left + e.data.rect.left + (e.data.rect.width / 2) - 100,
+          field: e.data.field,
+        });
+      }
+      if (e.data?.type === 'TEXT_SELECTION_CLEAR') {
+        setFloatingToolbar(prev => ({ ...prev, visible: false }));
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const applyFormat = (command: string, value?: string) => {
+    iframeRef.current?.contentWindow?.postMessage({
+      type: 'APPLY_FORMAT',
+      command,
+      value: value || null,
+    }, '*');
+  };
+
+  const tipoKey = eventData.event_type
+    ?.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace('anos', 'anos') || 'boda';
+  
+  const config = SECCIONES_POR_EVENTO[tipoKey] 
+    || SECCIONES_POR_EVENTO['boda'];
+
+  const ALWAYS_SHOW = ['configuracion', 'protagonistas', 'mensajes', 'fecha_lugar', 'distribucion', 'confirmacion'];
+
+  const filteredSections = SECTIONS.filter(section => {
+    if (ALWAYS_SHOW.includes(section.id)) return true;
+    return config[section.id] === true;
+  }).map(section => {
+    if (section.id === 'protagonistas' && config.protagonistas?.label) {
+      return { ...section, label: config.protagonistas.label };
+    }
+    return section;
+  });
   
   // ── PREVIEW CON postMessage ──
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -66,12 +127,38 @@ export default function EditorShell({ children }: EditorShellProps) {
 
   const eventDataStr = JSON.stringify(eventData);
 
+  const sendDataToIframe = (iframeNode: HTMLIFrameElement | null) => {
+    if (!iframeNode?.contentWindow) return;
+    
+    // Si el evento no tiene título ni fecha, no enviar nada
+    // para que la plantilla muestre sus datos de ejemplo
+    if (!eventData?.title && !eventData?.event_date) return;
+    
+    const data = { 
+      type: 'UPDATE_DATA', 
+      data: {
+        ...eventData,
+        firmas_enabled: eventData.signatures?.enabled ?? false
+      } 
+    };
+    iframeNode.contentWindow.postMessage(data, '*');
+    setTimeout(() => iframeNode?.contentWindow?.postMessage(data, '*'), 300);
+    setTimeout(() => iframeNode?.contentWindow?.postMessage(data, '*'), 800);
+  };
+
   useEffect(() => {
+    if (!eventData?.title && !eventData?.event_date) return;
     const timer = setTimeout(() => {
-      const msg = { type: 'UPDATE_DATA', data: eventData };
+      const msg = { 
+        type: 'UPDATE_DATA', 
+        data: {
+          ...eventData,
+          firmas_enabled: eventData.signatures?.enabled ?? false
+        } 
+      };
       iframeRef.current?.contentWindow?.postMessage(msg, '*');
       mobileIframeRef.current?.contentWindow?.postMessage(msg, '*');
-    }, 500); // 500ms es suficiente con postMessage
+    }, 500); 
     return () => clearTimeout(timer);
   }, [eventDataStr]);
 
@@ -87,9 +174,10 @@ export default function EditorShell({ children }: EditorShellProps) {
     }
   }, [activeSection]);
 
-  const currentPlanLevel = PLAN_HIERARCHY[eventData.plan as keyof typeof PLAN_HIERARCHY] || 1;
+  const currentPlanLevel = PLAN_HIERARCHY[effectivePlan as keyof typeof PLAN_HIERARCHY] || 1;
 
   const isLocked = (plan: string) => {
+    if (effectivePlan === 'diamante') return false;
     return PLAN_HIERARCHY[plan as keyof typeof PLAN_HIERARCHY] > currentPlanLevel;
   };
 
@@ -101,7 +189,7 @@ export default function EditorShell({ children }: EditorShellProps) {
       <aside className="hidden md:flex flex-col w-64 bg-white/70 backdrop-blur-md border-r overflow-y-auto" style={{ borderColor: '#f0dde3' }}>
         <nav className="p-4 space-y-1">
           <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Secciones</p>
-          {SECTIONS.map((section) => {
+          {filteredSections.map((section) => {
             const locked = isLocked(section.plan);
             const active = activeSection === section.id;
             
@@ -136,9 +224,9 @@ export default function EditorShell({ children }: EditorShellProps) {
       >
         <div className="p-6 md:p-8 pb-32 md:pb-8">
           {(() => {
-            const activeSectionObj = SECTIONS.find(s => s.id === activeSection);
+            const activeSectionObj = filteredSections.find(s => s.id === activeSection);
             const locked = activeSectionObj ? isLocked(activeSectionObj.plan) : false;
-            const requiredPlanText = activeSectionObj?.plan === 'basico' ? 'Plata' : activeSectionObj?.plan === 'rsvp' ? 'Oro' : 'Diamante';
+            const requiredPlanText = activeSectionObj?.plan === 'plata' ? 'Plata' : activeSectionObj?.plan === 'oro' ? 'Oro' : 'Diamante';
 
             return (
               <div className="relative">
@@ -178,6 +266,7 @@ export default function EditorShell({ children }: EditorShellProps) {
               <iframe 
                 ref={iframeRef}
                 srcDoc={initialHtml}
+                onLoad={() => sendDataToIframe(iframeRef.current)}
                 style={{ 
                   width: '100%', 
                   height: '100%', 
@@ -202,7 +291,7 @@ export default function EditorShell({ children }: EditorShellProps) {
                   setActiveTabDrawer(activeTabDrawer === tab.id ? null : tab.id);
                 } else if (tab.sections.length === 1) {
                   setActiveTabDrawer(null);
-                  const available = SECTIONS.find(s => s.id === tab.sections[0]);
+                  const available = filteredSections.find(s => s.id === tab.sections[0]);
                   if (available) setActiveSection(available.id);
                 }
               }}
@@ -245,7 +334,7 @@ export default function EditorShell({ children }: EditorShellProps) {
                 <button onClick={() => setActiveTabDrawer(null)} className="p-1 hover:bg-rose-50 rounded-full text-gray-400"><X size={16} /></button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {SECTIONS.filter(s => {
+                {filteredSections.filter(s => {
                   const currentTab = MOBILE_TABS.find(t => t.id === activeTabDrawer);
                   return currentTab ? currentTab.sections.includes(s.id) : false;
                 }).map(section => {
@@ -314,6 +403,7 @@ export default function EditorShell({ children }: EditorShellProps) {
                  <iframe 
                     ref={mobileIframeRef}
                     srcDoc={initialHtml}
+                    onLoad={() => sendDataToIframe(mobileIframeRef.current)}
                     className="w-full h-full border-none"
                     title="Mobile Live Preview"
                  />
@@ -345,6 +435,52 @@ export default function EditorShell({ children }: EditorShellProps) {
               <button onClick={() => setIsUpgradeModalOpen(false)} className="w-full py-2.5 mt-2 rounded-xl text-[11px] font-bold text-gray-400 hover:bg-gray-50 transition-colors">Cerrar</button>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── FLOATING TEXT TOOLBAR ── */}
+      <AnimatePresence>
+        {floatingToolbar.visible && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="fixed z-[200] flex items-center gap-1 bg-[#2d1b2d] rounded-xl px-2 py-1.5 shadow-2xl"
+            style={{
+              top: floatingToolbar.top,
+              left: floatingToolbar.left,
+            }}
+          >
+            <button onClick={() => applyFormat('bold')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Negrita">
+              <Bold size={13} />
+            </button>
+            <button onClick={() => applyFormat('italic')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Cursiva">
+              <Italic size={13} />
+            </button>
+            <div className="w-px h-4 bg-white/20 mx-0.5" />
+            <button onClick={() => applyFormat('justifyLeft')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Izquierda">
+              <AlignLeft size={13} />
+            </button>
+            <button onClick={() => applyFormat('justifyCenter')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Centro">
+              <AlignCenter size={13} />
+            </button>
+            <button onClick={() => applyFormat('justifyRight')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Derecha">
+              <AlignRight size={13} />
+            </button>
+            <div className="w-px h-4 bg-white/20 mx-0.5" />
+            <select
+              onChange={(e) => applyFormat('fontSize', e.target.value)}
+              defaultValue=""
+              className="bg-transparent text-white text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer"
+            >
+              <option value="" disabled className="bg-[#2d1b2d]">Aa</option>
+              <option value="2" className="bg-[#2d1b2d]">S</option>
+              <option value="3" className="bg-[#2d1b2d]">M</option>
+              <option value="5" className="bg-[#2d1b2d]">L</option>
+              <option value="7" className="bg-[#2d1b2d]">XL</option>
+            </select>
+          </motion.div>
         )}
       </AnimatePresence>
 

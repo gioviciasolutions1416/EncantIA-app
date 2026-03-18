@@ -29,8 +29,11 @@ export default function Mensajes() {
 
   const updateFontStyle = (fontId: string) => {
     const currentStyles = eventData.sections_styles || {};
+    const selectedFont = FONTS.find(f => f.id === fontId);
+    
     updateField('sections_styles', {
       ...currentStyles,
+      font_accent: selectedFont ? selectedFont.name : undefined,
       messages: {
         ...currentStyles.messages,
         font_id: fontId

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import PublishModal from '@/components/editor/PublishModal';
 import { useParams, useRouter } from 'next/navigation';
 import { EditorProvider, useEditor } from '@/context/EditorContext';
-import { loadEvent } from '@/lib/editor-supabase';
+import { loadEvent, saveEvent } from '@/lib/editor-supabase';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { Loader2, ArrowLeft, Save, Globe, Palette, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -250,6 +250,7 @@ function EditorContent() {
                 if (confirm('¿Seguro que quieres despublicar tu invitación?')) {
                   updateField('is_published', false);
                   toast.success('Invitación despublicada');
+                  saveEvent(id, { ...eventData, is_published: false });
                 }
               } else {
                 setIsPublishModalOpen(true);
@@ -302,6 +303,7 @@ function EditorContent() {
         onClose={() => setIsPublishModalOpen(false)}
         onConfirm={() => {
           updateField('is_published', true);
+          saveEvent(id, { ...eventData, is_published: true });
           setIsPublishModalOpen(false);
           toast.success('¡Tu invitación está publicada! ✨');
         }}

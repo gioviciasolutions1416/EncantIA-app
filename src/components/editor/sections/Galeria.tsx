@@ -170,6 +170,57 @@ export default function Galeria() {
         </div>
       </div>
 
+      {/* SECCIÓN VIDEO DE PORTADA */}
+      <div className="space-y-4">
+        <label className="text-[11px] font-black text-[#a35d6a]/60 uppercase tracking-[0.2em] flex items-center gap-2">
+          Video de Portada (Opcional)
+        </label>
+        
+        <div className="bg-white border border-rose-100 p-5 rounded-[2rem] shadow-sm space-y-3">
+          <input
+            type="url"
+            value={eventData.video_url || ''}
+            onChange={(e) => updateField('video_url', e.target.value)}
+            placeholder="URL de YouTube, Vimeo o MP4..."
+            className="w-full bg-[#fdfafc] border border-rose-100 p-3 rounded-2xl text-xs font-bold text-[#7a5060] outline-none"
+          />
+          <p className="text-[9px] text-[#2d1b2d]/50 font-bold">
+            💡 El video reemplazará la foto en el hero de tu invitación si la plantilla lo soporta.
+          </p>
+        </div>
+
+        <AnimatePresence>
+          {eventData.video_url && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="relative aspect-[16/9] w-full rounded-[2rem] overflow-hidden border border-rose-100 bg-black shadow-sm"
+            >
+              {eventData.video_url.includes('youtube.com') || eventData.video_url.includes('youtu.be') ? (
+                <iframe 
+                  src={`https://www.youtube.com/embed/${eventData.video_url.includes('youtu.be') ? eventData.video_url.split('/').pop()?.split('?')[0] : eventData.video_url.split('v=')[1]?.split('&')[0]}`}
+                  className="w-full h-full border-none"
+                  allowFullScreen
+                />
+              ) : eventData.video_url.includes('vimeo.com') ? (
+                <iframe 
+                  src={`https://player.vimeo.com/video/${eventData.video_url.split('/').pop()}`}
+                  className="w-full h-full border-none"
+                  allowFullScreen
+                />
+              ) : (
+                <video 
+                  src={eventData.video_url} 
+                  controls 
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {/* SECCIÓN GALERÍA */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">

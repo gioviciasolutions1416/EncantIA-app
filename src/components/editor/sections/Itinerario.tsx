@@ -20,14 +20,14 @@ import {
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 
 const ICON_OPTIONS = [
-  { id: 'clock', icon: Clock },
-  { id: 'map', icon: MapPin },
-  { id: 'music', icon: Music },
-  { id: 'camera', icon: Camera },
-  { id: 'food', icon: Utensils },
-  { id: 'drink', icon: GlassWater },
-  { id: 'party', icon: PartyPopper },
-  { id: 'zap', icon: Zap },
+  { id: '⛪', emoji: '⛪' },
+  { id: '🥂', emoji: '🥂' },
+  { id: '🎵', emoji: '🎵' },
+  { id: '📸', emoji: '📸' },
+  { id: '🍽️', emoji: '🍽️' },
+  { id: '💐', emoji: '💐' },
+  { id: '🎉', emoji: '🎉' },
+  { id: '✨', emoji: '✨' }
 ];
 
 export default function Itinerario() {
@@ -37,10 +37,10 @@ export default function Itinerario() {
   const addItem = () => {
     const newItem = {
       id: Math.random().toString(36).substr(2, 9),
-      time: '18:00',
-      title: 'Nuevo Evento',
-      description: '',
-      icon: 'clock'
+      hora: '18:00',
+      titulo: 'Nuevo Evento',
+      descripcion: '',
+      icono: '⛪'
     };
     updateField('itinerary_items', [...items, newItem]);
   };
@@ -69,18 +69,18 @@ export default function Itinerario() {
     let suggested: any[] = [];
     if (eventData.event_type === 'Bautizo') {
       suggested = [
-        { id: '1', time: '11:00', title: 'Misa de Bautismo', description: '', icon: 'clock' },
-        { id: '2', time: '12:30', title: 'Sesión de Fotos', description: '', icon: 'camera' },
-        { id: '3', time: '13:00', title: 'Comida de Celebración', description: '', icon: 'food' },
-        { id: '4', time: '15:00', title: 'Pastel y Brindis', description: '', icon: 'drink' },
-        { id: '5', time: '15:30', title: 'Entrega de Recuerdos', description: '', icon: 'party' },
+        { id: '1', hora: '11:00', titulo: 'Misa de Bautismo', descripcion: '', icono: '⛪' },
+        { id: '2', hora: '12:30', titulo: 'Sesión de Fotos', descripcion: '', icono: '📸' },
+        { id: '3', hora: '13:00', titulo: 'Comida de Celebración', descripcion: '', icono: '🍽️' },
+        { id: '4', hora: '15:00', titulo: 'Pastel y Brindis', descripcion: '', icono: '🥂' },
+        { id: '5', hora: '15:30', titulo: 'Entrega de Recuerdos', descripcion: '', icono: '🎉' },
       ];
     } else {
       suggested = [
-        { id: '1', time: '16:00', title: 'Ceremonia', description: 'Ceremonia Religiosa', icon: 'clock' },
-        { id: '2', time: '18:00', title: 'Recepción', description: 'Llegada al salón', icon: 'music' },
-        { id: '3', time: '20:30', title: 'Banquete', description: 'Cena y brindis', icon: 'food' },
-        { id: '4', time: '22:00', title: 'Fiesta', description: 'Música y baile', icon: 'party' },
+        { id: '1', hora: '16:00', titulo: 'Ceremonia', descripcion: 'Ceremonia Religiosa', icono: '⛪' },
+        { id: '2', hora: '18:00', titulo: 'Recepción', descripcion: 'Llegada al salón', icono: '🎵' },
+        { id: '3', hora: '20:30', titulo: 'Banquete', descripcion: 'Cena y brindis', icono: '🍽️' },
+        { id: '4', hora: '22:00', titulo: 'Fiesta', descripcion: 'Música y baile', icono: '🎉' },
       ];
     }
     updateField('itinerary_items', suggested);
@@ -127,8 +127,8 @@ export default function Itinerario() {
                     <span className="text-[9px] font-bold text-gray-400 uppercase ml-1">Hora</span>
                     <input
                       type="time"
-                      value={item.time}
-                      onChange={(e) => updateItem(item.id, 'time', e.target.value)}
+                      value={item.hora}
+                      onChange={(e) => updateItem(item.id, 'hora', e.target.value)}
                       className="bg-[#fdfafc] border border-rose-100 rounded-xl p-2 text-xs font-bold text-[#2d1b2d] outline-none"
                     />
                   </div>
@@ -138,14 +138,14 @@ export default function Itinerario() {
                     {ICON_OPTIONS.map((opt) => (
                       <button
                         key={opt.id}
-                        onClick={() => updateItem(item.id, 'icon', opt.id)}
+                        onClick={() => updateItem(item.id, 'icono', opt.id)}
                         className={`p-1.5 rounded-lg border transition-all ${
-                          item.icon === opt.id 
-                            ? 'bg-rose-50 border-[#a35d6a] text-[#a35d6a]' 
+                          item.icono === opt.id 
+                            ? 'bg-rose-50 border-[#a35d6a]' 
                             : 'bg-white border-rose-50 text-gray-300 hover:border-rose-200'
                         }`}
                       >
-                        <opt.icon size={14} />
+                        <span className="text-sm">{opt.emoji}</span>
                       </button>
                     ))}
                   </div>
@@ -157,8 +157,8 @@ export default function Itinerario() {
                     <span className="text-[9px] font-bold text-gray-400 uppercase ml-1">Título de la Actividad</span>
                     <input
                       type="text"
-                      value={item.title}
-                      onChange={(e) => updateItem(item.id, 'title', e.target.value)}
+                      value={item.titulo}
+                      onChange={(e) => updateItem(item.id, 'titulo', e.target.value)}
                       placeholder="Ej: Ceremonia Religiosa"
                       className="w-full bg-white border-b border-rose-50 p-2 text-sm font-black text-[#2d1b2d] focus:border-[#a35d6a] outline-none transition-colors"
                     />
@@ -166,8 +166,8 @@ export default function Itinerario() {
                   <div className="space-y-1">
                     <span className="text-[9px] font-bold text-gray-400 uppercase ml-1">Breve Descripción</span>
                     <textarea
-                      value={item.description}
-                      onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                      value={item.descripcion}
+                      onChange={(e) => updateItem(item.id, 'descripcion', e.target.value)}
                       placeholder="Detalles sobre este momento..."
                       rows={1}
                       className="w-full bg-transparent border-none focus:ring-0 text-[11px] font-medium text-[#7a5060] p-2 resize-none"

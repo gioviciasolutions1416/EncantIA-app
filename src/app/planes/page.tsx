@@ -20,8 +20,8 @@ import { toast } from 'sonner';
 
 const PLANES = [
     {
-        id: 'basico',
-        name: 'Básico',
+        id: 'plata',
+        name: 'Plata',
         price: 299,
         featured: false,
         icon: <Layout className="text-gray-400" size={24} />,
@@ -35,13 +35,13 @@ const PLANES = [
         ]
     },
     {
-        id: 'rsvp',
-        name: 'RSVP Plus',
+        id: 'oro',
+        name: 'Oro',
         price: 499,
         featured: true,
         icon: <Zap className="text-amber-500" size={24} />,
         features: [
-            "Todo lo del plan Básico",
+            "Todo lo del plan Plata",
             "3 temas de IA premium",
             "Confirmaciones en tiempo real",
             "Música de fondo ilimitada",
@@ -50,13 +50,13 @@ const PLANES = [
         ]
     },
     {
-        id: 'premium',
-        name: 'VIP Premium',
+        id: 'diamante',
+        name: 'Diamante',
         price: 799,
         featured: false,
         icon: <Sparkles className="text-[#a35d6a]" size={24} />,
         features: [
-            "Todo lo del plan RSVP",
+            "Todo lo del plan Oro",
             "Temas IA ilimitados",
             "Galería de fotos 4K",
             "Vídeo Invitación Pro",

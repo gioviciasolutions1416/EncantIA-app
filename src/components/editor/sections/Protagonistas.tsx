@@ -12,20 +12,40 @@ import {
   GraduationCap
 } from 'lucide-react';
 
-const CAMPOS_POR_EVENTO: Record<string, Record<string, boolean>> = {
-  'Boda':        { novia: true, novio: true, padre_novia: true, madre_novia: true, padre_novio: true, madre_novio: true, padrinos: true },
-  'XV Años':     { nombre_festejada: true, padre: true, madre: true, padrinos: true },
-  'Bautizo':     { nombre_festejado: true, padre: true, madre: true, padrino: true, madrina: true },
-  'Baby Shower': { nombre_bebe: true, madre: true, padre: true },
-  'Graduación':  { nombre_festejado: true, padre: true, madre: true, institucion: true, carrera: true },
-};
+import { SECCIONES_POR_EVENTO } from '@/config/event-sections';
 
 export default function Protagonistas() {
   const { eventData, updateField } = useEditor();
-  const tipo = eventData.event_type || 'Boda';
-  const camposVisibles = CAMPOS_POR_EVENTO[tipo] || CAMPOS_POR_EVENTO['Boda'];
+  const tipoKey = eventData.event_type
+    ?.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace('anos', 'anos') || 'boda';
+  
+  const config = SECCIONES_POR_EVENTO[tipoKey] 
+    || SECCIONES_POR_EVENTO['boda'];
 
-  const showField = (fieldName: string) => !!camposVisibles[fieldName];
+  const showField = (fieldName: string) => {
+    switch (fieldName) {
+      case 'novia': return config.protagonistas?.campo1 === 'novia';
+      case 'novio': return config.protagonistas?.campo2 === 'novio';
+      case 'nombre_festejada': return config.protagonistas?.campo1 === 'festejada';
+      case 'nombre_festejado': return config.protagonistas?.campo1 === 'bebe' || config.protagonistas?.campo1 === 'graduado';
+      case 'nombre_bebe': return config.protagonistas?.campo1 === 'mama';
+      case 'institucion': return config.institucion === true;
+      case 'carrera': return config.career === true;
+      case 'padre_novia': return config.padres === true && tipoKey === 'boda';
+      case 'madre_novia': return config.padres === true && tipoKey === 'boda';
+      case 'padre_novio': return config.padres === true && tipoKey === 'boda';
+      case 'madre_novio': return config.padres === true && tipoKey === 'boda';
+      case 'padre': return config.padres === true && tipoKey !== 'boda';
+      case 'madre': return config.padres === true && tipoKey !== 'boda';
+      case 'padrinos': return config.padrinos === true;
+      case 'chambelanes': return config.chambelanes === true;
+      default: return false;
+    }
+  };
 
   const noviaStr = (eventData.title || '').split('&')[0]?.trim() || '';
   const novioStr = (eventData.title || '').split('&')[1]?.trim() || '';
@@ -140,6 +160,25 @@ export default function Protagonistas() {
                 />
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* ── CHAMBELANES ── */}
+      {showField('chambelanes') && (
+        <section className="space-y-4">
+          <label className="text-[11px] font-black text-[#a35d6a]/60 uppercase tracking-[0.2em] flex items-center gap-2 border-b border-rose-100 pb-2">
+            <Users size={14} /> 
+            Chambelanes de Honor
+          </label>
+          <div className="pt-2">
+            <input
+              type="text"
+              value={eventData.chambelanes || ''}
+              onChange={(e) => updateField('chambelanes', e.target.value)}
+              placeholder="Nombres de tus chambelanes..."
+              className="w-full bg-white border border-rose-100 p-3 rounded-xl text-xs font-bold text-[#2d1b2d] outline-none"
+            />
           </div>
         </section>
       )}
@@ -364,31 +403,6 @@ export default function Protagonistas() {
               </button>
             </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            {showField('padrino') && (
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Padrino</span>
-                <input
-                  type="text"
-                  value={eventData.padrino || ''}
-                  onChange={(e) => updateField('padrino', e.target.value)}
-                  className="w-full bg-white border border-rose-100 p-3 rounded-xl text-xs font-bold text-[#2d1b2d] outline-none"
-                />
-              </div>
-            )}
-            {showField('madrina') && (
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Madrina</span>
-                <input
-                  type="text"
-                  value={eventData.madrina || ''}
-                  onChange={(e) => updateField('madrina', e.target.value)}
-                  className="w-full bg-white border border-rose-100 p-3 rounded-xl text-xs font-bold text-[#2d1b2d] outline-none"
-                />
-              </div>
-            )}
-          </div>
         </section>
       )}
     </div>

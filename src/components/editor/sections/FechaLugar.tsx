@@ -175,8 +175,8 @@ export default function FechaLugar() {
                 </span>
                 <input
                   type="time"
-                  value={eventData.segunda_sede_json?.event_time || ''}
-                  onChange={(e) => updateSecondVenueField('event_time', e.target.value)}
+                  value={eventData.segunda_sede_json?.hora || ''}
+                  onChange={(e) => updateSecondVenueField('hora', e.target.value)}
                   className="w-full bg-white border border-rose-100 p-4 rounded-2xl text-sm font-bold text-[#2d1b2d] outline-none"
                 />
               </div>
@@ -223,8 +223,8 @@ export default function FechaLugar() {
                 </span>
                 <input
                   type="text"
-                  value={eventData.segunda_sede_json?.location_waze_url || ''}
-                  onChange={(e) => updateSecondVenueField('location_waze_url', e.target.value)}
+                  value={eventData.segunda_sede_json?.waze_url || ''}
+                  onChange={(e) => updateSecondVenueField('waze_url', e.target.value)}
                   className="w-full bg-white border border-rose-100 p-4 rounded-2xl text-[11px] font-medium text-[#7a5060] outline-none"
                 />
               </div>

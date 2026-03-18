@@ -2,7 +2,7 @@ import { TEMPLATE_HTML_MAP } from '@/templates';
 import { EventData } from './editor-supabase';
 
 const buildItinerarioHtml = (items: any[]) => {
-  if (!items || items.length === 0) return '<!-- Sin itinerario -->';
+  if (!items || items.length === 0) return '<div class="itin-empty">El itinerario aparecerá aquí</div>';
   return items.map(p => `
 <div class="itin-item">
   <div class="itin-time">${p.hora || ''}</div>
@@ -19,6 +19,12 @@ const buildGaleriaHtml = (urls: string[]) => {
   if (!urls || urls.length === 0) return '<!-- Sin fotos en galería -->';
   const imgList = urls.map(url => `<img src="${url}" alt="" loading="lazy" />`).join('');
   return `<div class="gal-dynamic">${imgList}</div>`;
+};
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return 'Fecha por definir';
+  const date = new Date(dateStr + 'T12:00:00');
+  return date.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 export const injectData = (templateId: string, eventData: EventData): string => {
@@ -57,18 +63,19 @@ export const injectData = (templateId: string, eventData: EventData): string => 
   const galeriaHtml = buildGaleriaHtml(eventData.gallery_urls || []);
 
   // Mapeo detallado de variables
-  const whatsappUrl = `https://wa.me/521234567890?text=${encodeURIComponent(`¡Hola! Confirmo mi asistencia a la invitación: ${eventData.title}. Link: https://giovis.app/${eventData.slug}`)}`;
+  const phone = eventData.rsvp_config?.phone || eventData.rsvp_config?.confTelefono || '521234567890';
+  const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(`¡Hola! Confirmo mi asistencia a la invitación: ${eventData.title}. Link: https://giovis.app/${eventData.slug}`)}`;
 
   const vars: Record<string, string> = {
     novia: novia,
     novio: novio,
-    fecha_hero: eventData.event_date || 'Fecha por definir',
+    fecha_hero: formatDate(eventData.event_date || ''),
     frase: eventData.message || '',
     mensaje_secundario: eventData.message_secondary || '',
-    madre_novia: eventData.parents_bride_mother || '',
-    padre_novia: eventData.parents_bride_father || '',
-    madre_novio: eventData.parents_groom_mother || '',
-    padre_novio: eventData.parents_groom_father || '',
+    madre_novia: eventData.parents_bride_mother ? `${eventData.parents_bride_mother_deceased ? '† ' : ''}${eventData.parents_bride_mother}` : '',
+    padre_novia: eventData.parents_bride_father ? `${eventData.parents_bride_father_deceased ? '† ' : ''}${eventData.parents_bride_father}` : '',
+    madre_novio: eventData.parents_groom_mother ? `${eventData.parents_groom_mother_deceased ? '† ' : ''}${eventData.parents_groom_mother}` : '',
+    padre_novio: eventData.parents_groom_father ? `${eventData.parents_groom_father_deceased ? '† ' : ''}${eventData.parents_groom_father}` : '',
     padrinos_html: padrinosHtml,
     lugar_ceremonia: eventData.venue || '',
     direccion_ceremonia: eventData.venue_address || '',
@@ -76,7 +83,7 @@ export const injectData = (templateId: string, eventData: EventData): string => 
     lugar_recepcion: eventData.segunda_sede_json?.lugar || eventData.venue || '',
     direccion_recepcion: eventData.segunda_sede_json?.direccion || eventData.venue_address || '',
     hora_recepcion: eventData.segunda_sede_json?.hora || eventData.event_time || '',
-    confirmacion_fecha: eventData.rsvp_config?.confFechaLimite || (eventData as any).rsvp_deadline || 'Próximamente',
+    confirmacion_fecha: eventData.rsvp_config?.deadline || eventData.rsvp_config?.confFechaLimite || (eventData as any).rsvp_deadline || 'Consultar fecha',
     whatsapp_url: whatsappUrl,
     // Imágenes
     portada_url: eventData.cover_image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1200',
@@ -88,24 +95,34 @@ export const injectData = (templateId: string, eventData: EventData): string => 
     nombre_madre: eventData.title || '',
     fecha_bebe: eventData.segunda_sede_json?.fecha_bebe || '',
     vestimenta: eventData.dress_code || '',
+    vestimenta_damas: eventData.dress_code_women || '',
+    vestimenta_caballeros: eventData.dress_code_men || '',
+    vestimenta_nota: eventData.dress_code_detail || '',
+    dress_code_icons_enabled: eventData.dress_code_icons_enabled ? 'block' : 'none',
     carrera: eventData.dress_code_detail || '',
     institucion: eventData.venue || '',
     generacion: eventData.segunda_sede_json?.generacion || '',
-    madre: eventData.parents_bride_mother || '',
-    padre: eventData.parents_bride_father || '',
-    madrina: eventData.parents_bride_mother || '',
-    padrino: eventData.parents_bride_father || '',
+    madre: eventData.parents_bride_mother ? `${eventData.parents_bride_mother_deceased ? '† ' : ''}${eventData.parents_bride_mother}` : '',
+    padre: eventData.parents_bride_father ? `${eventData.parents_bride_father_deceased ? '† ' : ''}${eventData.parents_bride_father}` : '',
+    madrina: eventData.madrina ? eventData.madrina : (eventData.parents_bride_mother ? `${eventData.parents_bride_mother_deceased ? '† ' : ''}${eventData.parents_bride_mother}` : ''),
+    padrino: eventData.padrino ? eventData.padrino : (eventData.parents_bride_father ? `${eventData.parents_bride_father_deceased ? '† ' : ''}${eventData.parents_bride_father}` : ''),
     regalo_mensaje: eventData.gift_message || '',
     tipo_evento: eventData.event_type || '',
     fecha_corta: eventData.event_date || '',
     fecha_larga: eventData.event_date || '',
     cover_image_url: eventData.cover_image_url || '',
     itin_html: buildItinerarioHtml(eventData.itinerary_items || []),
+    redes_sociales: eventData.playlist || '',
     color_primary: eventData.sections_styles?.color_primary || '#a35d6a',
     color_secondary: eventData.sections_styles?.color_secondary || '#f0dde3',
     color_bg: eventData.sections_styles?.color_bg || '#fdfafc',
     font_titulos: eventData.sections_styles?.font_titulos || 'Playfair Display',
     font_cuerpo: eventData.sections_styles?.font_cuerpo || 'Jost',
+    location_url: eventData.location_url || '#',
+    location_waze_url: eventData.location_waze_url || '#',
+    location_url_recepcion: eventData.segunda_sede_json?.location_url || eventData.location_url || '#',
+    solo_adultos: `<div data-field="solo_adultos" style="display: ${eventData.adults_only ? 'block' : 'none'}; text-align: center; font-weight: bold; color: var(--color-primary); margin: 1rem 0; font-size: 0.8rem; letter-spacing: 0.1em;">🚫 EVENTO SOLO PARA ADULTOS</div>`,
+    idioma_dual: `<div data-bilingual style="display: ${eventData.is_bilingual ? 'block' : 'none'}; text-align: center; font-style: italic; color: var(--warm); font-size: 0.8rem; margin-top: 0.5rem;">We would love for you to celebrate with us</div>`
   };
 
   // CSS Global inyectado (eliminamos las etiquetas <style> y lo inyectamos antes del primer </style>)
@@ -127,6 +144,7 @@ export const injectData = (templateId: string, eventData: EventData): string => 
 .itin-body { flex: 1; }
 .itin-name { font-weight: 600; font-size: 15px; color: #333; }
 .itin-desc { font-size: 12px; color: #777; margin-top: 2px; }
+.itin-empty { text-align: center; padding: 2rem; color: #a35d6a; font-style: italic; font-size: 0.9rem; }
 
 /* Estilos de Galería Dinámica */
 .gal-dynamic { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; width: 100%; }
@@ -169,10 +187,20 @@ window.addEventListener('message', (e) => {
     });
   };
 
+  // Solo adultos
+  const adultosEl = document.querySelector('[data-field="solo_adultos"]');
+  if (adultosEl) {
+    adultosEl.style.display = d.adults_only ? 'block' : 'none';
+  }
+  
+  // Idioma dual
+  document.querySelectorAll('[data-bilingual]').forEach(el => {
+    el.style.display = d.is_bilingual ? 'block' : 'none';
+  });
+
   const novia = d.title?.split('&')[0]?.trim() || d.title;
   const novio = d.title?.split('&')[1]?.trim() || '';
-  const waUrl = \`https://wa.me/521234567890?text=\${encodeURIComponent('¡Hola! Confirmo mi asistencia a la invitación: ' + d.title + '. Link: https://giovis.app/' + d.slug)}\`;
-
+  
   const buildPadrinos = (list) => {
     if (!list || !list.length) return '';
     const items = list.map(p => {
@@ -203,25 +231,67 @@ window.addEventListener('message', (e) => {
   set('[data-field="lugar_recepcion"]', d.segunda_sede_json?.lugar || d.venue);
   set('[data-field="direccion_recepcion"]', d.segunda_sede_json?.direccion || d.venue_address);
   set('[data-field="hora_recepcion"]', d.segunda_sede_json?.hora || d.event_time);
-  set('[data-field="madre_novia"]', d.parents_bride_mother);
-  set('[data-field="padre_novia"]', d.parents_bride_father);
-  set('[data-field="madre_novio"]', d.parents_groom_mother);
-  set('[data-field="padre_novio"]', d.parents_groom_father);
-  set('[data-field="madre"]', d.parents_bride_mother);
-  set('[data-field="padre"]', d.parents_bride_father);
-  set('[data-field="madrina"]', d.madrina || d.parents_bride_mother);
-  set('[data-field="padrino"]', d.padrino || d.parents_bride_father);
+  const formatNameDeceased = (name, isDeceased) => name ? (isDeceased ? '† ' + name : name) : '';
+
+  set('[data-field="madre_novia"]', formatNameDeceased(d.parents_bride_mother, d.parents_bride_mother_deceased));
+  set('[data-field="padre_novia"]', formatNameDeceased(d.parents_bride_father, d.parents_bride_father_deceased));
+  set('[data-field="madre_novio"]', formatNameDeceased(d.parents_groom_mother, d.parents_groom_mother_deceased));
+  set('[data-field="padre_novio"]', formatNameDeceased(d.parents_groom_father, d.parents_groom_father_deceased));
+  set('[data-field="madre"]', formatNameDeceased(d.parents_bride_mother, d.parents_bride_mother_deceased));
+  set('[data-field="padre"]', formatNameDeceased(d.parents_bride_father, d.parents_bride_father_deceased));
+  set('[data-field="madrina"]', formatNameDeceased(d.madrina || d.parents_bride_mother, d.parents_bride_mother_deceased));
+  set('[data-field="padrino"]', formatNameDeceased(d.padrino || d.parents_bride_father, d.parents_bride_father_deceased));
   set('[data-field="nombre_festejada"]', novia);
   set('[data-field="nombre_festejado"]', novia);
   set('[data-field="nombre_madre"]', d.title);
   set('[data-field="fecha_bebe"]', d.segunda_sede_json?.fecha_bebe);
   set('[data-field="vestimenta"]', d.dress_code);
+  set('[data-field="vestimenta_damas"]', d.dress_code_women);
+  set('[data-field="vestimenta_caballeros"]', d.dress_code_men);
+  set('[data-field="vestimenta_nota"]', d.dress_code_detail);
+  const iconsEl = document.querySelector('[data-field="vestimenta_iconos"]');
+  if (iconsEl) iconsEl.style.display = d.dress_code_icons_enabled ? 'block' : 'none';
   set('[data-field="carrera"]', d.dress_code_detail);
   set('[data-field="institucion"]', d.venue);
   set('[data-field="generacion"]', d.segunda_sede_json?.generacion);
   set('[data-field="regalo_mensaje"]', d.gift_message);
-  set('[data-field="confirmacion_fecha"]', d.rsvp_config?.confFechaLimite || d.rsvp_deadline);
-  set('[data-field="whatsapp_url"]', waUrl);
+  set('[data-field="confirmacion_fecha"]', d.rsvp_config?.deadline || d.rsvp_config?.confFechaLimite || d.rsvp_deadline);
+
+  const phone = d.rsvp_config?.phone || d.rsvp_config?.confTelefono || '521234567890';
+  const waUrl = \`https://wa.me/\${phone}?text=\${encodeURIComponent('¡Hola! Confirmo mi asistencia a la invitación: ' + d.title + '. Link: https://giovis.app/' + d.slug)}\`;
+
+  const isEn = document.getElementById('lang-toggle-btn') && document.getElementById('lang-en')?.style?.fontWeight === 'bold';
+
+  const rsvpEnabled = d.rsvp_config?.enabled ?? d.rsvp_config?.confHabilitada ?? true;
+  document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el => {
+    if (rsvpEnabled) {
+      el.style.display = 'inline-block';
+      el.innerText = isEn ? 'Confirm Attendance' : 'Confirmar Asistencia';
+      el.style.pointerEvents = 'auto';
+      el.style.background = '';
+      el.style.color = '';
+      el.href = waUrl;
+    } else {
+      el.style.display = 'inline-block';
+      el.innerText = isEn ? 'Confirmation unavailable' : 'Confirmación no disponible';
+      el.style.pointerEvents = 'none';
+      el.style.background = '#ddd';
+      el.style.color = '#888';
+      el.href = '#';
+    }
+  });
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T12:00:00');
+    return date.toLocaleDateString(isEn ? 'en-US' : 'es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  set('[data-field="fecha_hero"]', formatDate(d.event_date));
+
+  // Ubicaciones (href)
+  document.querySelectorAll('[data-field="location_url"]').forEach(el => el.href = d.location_url || '#');
+  document.querySelectorAll('[data-field="location_waze_url"]').forEach(el => el.href = d.location_waze_url || '#');
+  document.querySelectorAll('[data-field="location_url_recepcion"]').forEach(el => el.href = d.segunda_sede_json?.location_url || d.location_url || '#');
   
   // Actualizar colores y tipografía de sections_styles en tiempo real
   // Actualizar colores y tipografía de sections_styles en tiempo real
@@ -294,7 +364,7 @@ window.addEventListener('message', (e) => {
   }
   
   // Imagen de portada
-  const coverUrl = d.cover_image_url || '';
+  const coverUrl = d.cover_image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1200';
   document.querySelectorAll('[data-field="portada_url"]').forEach(el => {
     if (el.tagName === 'IMG') el.src = coverUrl;
     else el.style.backgroundImage = \`url(\${coverUrl})\`;
@@ -311,7 +381,10 @@ window.addEventListener('message', (e) => {
 
   // Itinerario
   document.querySelectorAll('[data-field="itin_html"]').forEach(el => {
-    if (!d.itinerary_items) return;
+    if (!d.itinerary_items || d.itinerary_items.length === 0) {
+      el.innerHTML = '<div class="itin-empty">El itinerario aparecerá aquí</div>';
+      return;
+    }
     el.innerHTML = d.itinerary_items.map(item => \`
       <div class="itin-item">
         <div class="itin-time">\${item.hora || ''}</div>
@@ -330,6 +403,99 @@ window.addEventListener('message', (e) => {
     if (coverEl.tagName === 'IMG') coverEl.src = d.cover_image_url;
     else coverEl.style.backgroundImage = \`url(\${d.cover_image_url})\`;
   }
+
+  // Música
+  if (d.music_url) {
+    const audio = document.getElementById('audio-player');
+    const musicaSection = document.querySelector('[data-section="musica"]');
+    if (audio) { audio.src = d.music_url; audio.style.display = 'block'; }
+    if (musicaSection) musicaSection.style.display = 'block';
+  }
+
+  // Regalos
+  const regalosSection = document.querySelector('[data-section="regalos"]');
+  if (regalosSection) {
+    regalosSection.style.display = (d.gift_message || (d.regalos_list && d.regalos_list.length > 0)) ? 'block' : 'none';
+  }
+  set('[data-field="regalo_mensaje"]', d.gift_message || '');
+  const regalosEl = document.querySelector('[data-field="regalos_html"]');
+  if (regalosEl && d.regalos_list) {
+    regalosEl.innerHTML = d.regalos_list.map(r => 
+      \`<a href="\${r.url}" target="_blank" class="regalo-link">🎁 \${r.nombre}</a>\`
+    ).join('');
+  }
+
+  // Firmas visibles
+  const firmasSection = document.querySelector('[data-section="firmas"]');
+  if (firmasSection) {
+    firmasSection.style.display = 'block';
+  }
+});
+
+// Toggle música global
+window.toggleMusic = function() {
+  const audio = document.getElementById('audio-player');
+  if (!audio) return;
+  if (audio.paused) { 
+    audio.play(); 
+    const btn = document.querySelector('.btn-play');
+    if (btn) btn.textContent = '⏸ Pausar'; 
+  } else { 
+    audio.pause(); 
+    const btn = document.querySelector('.btn-play');
+    if (btn) btn.textContent = '▶ Reproducir'; 
+  }
+}
+
+// Firmas enviar
+window.enviarFirma = function() {
+  const nombre = document.getElementById('firma-nombre')?.value;
+  const mensaje = document.getElementById('firma-mensaje')?.value;
+  if (!nombre || !mensaje) return;
+  const lista = document.getElementById('firmas-lista');
+  if (lista) {
+    const card = document.createElement('div');
+    card.className = 'firma-card';
+    card.innerHTML = \`<div class="firma-card-nombre">💌 \${nombre}</div><div class="firma-card-msg">\${mensaje}</div>\`;
+    lista.prepend(card);
+  }
+  if (document.getElementById('firma-nombre')) document.getElementById('firma-nombre').value = '';
+  if (document.getElementById('firma-mensaje')) document.getElementById('firma-mensaje').value = '';
+}
+// ── TOOLBAR FLOTANTE DE FORMATO ──────────────────────────────────────
+document.addEventListener('mouseup', () => {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+    window.parent.postMessage({ type: 'TEXT_SELECTION_CLEAR' }, '*');
+    return;
+  }
+  const range = selection.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+  const el = selection.anchorNode?.parentElement;
+  const field = el?.closest('[data-field]')?.getAttribute('data-field') || null;
+  if (!field) {
+    window.parent.postMessage({ type: 'TEXT_SELECTION_CLEAR' }, '*');
+    return;
+  }
+  window.parent.postMessage({
+    type: 'TEXT_SELECTION',
+    field: field,
+    text: selection.toString(),
+    rect: {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    }
+  }, '*');
+});
+
+// Aplicar formato recibido desde el editor
+window.addEventListener('message', (e) => {
+  if (e.data?.type !== 'APPLY_FORMAT') return;
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  document.execCommand(e.data.command, false, e.data.value || null);
 });
 </script>
 `;

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
 import { EventData } from '@/lib/editor-supabase';
+import { supabase } from '@/lib/supabase-browser';
 
 interface EditorContextType {
   // Estados
@@ -24,6 +25,10 @@ interface EditorContextType {
   setShowMobilePreview: React.Dispatch<React.SetStateAction<boolean>>;
   showDesignPanel: boolean;
   setShowDesignPanel: React.Dispatch<React.SetStateAction<boolean>>;
+  
+  // Perfil y Plan
+  profile: any;
+  effectivePlan: 'prueba' | 'plata' | 'oro' | 'diamante';
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -37,6 +42,24 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [showDesignPanel, setShowDesignPanel] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        if (data) {
+          setProfile(data);
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Form States
   const [eventData, setEventData] = useState<EventData>({
@@ -104,6 +127,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
+  const effectivePlan = profile?.role === 'admin' ? 'diamante' : eventData.plan;
+
   return (
     <EditorContext.Provider
       value={{
@@ -124,6 +149,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         setShowMobilePreview,
         showDesignPanel,
         setShowDesignPanel,
+        profile,
+        effectivePlan,
       }}
     >
       {children}

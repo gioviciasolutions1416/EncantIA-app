@@ -1,0 +1,316 @@
+
+=== src/templates/boda_bellabestia.ts ===
+299: <span class="parent-name" data-field="madre_novio">Sra. Beatriz Alcázar</span>
+300: <span class="parent-name" data-field="padre_novio">Sr. Armando Castillo</span>
+301: </div>
+302: <div class="padrinos-container">
+303: <h3>Nuestros Padrinos de Velación</h3>
+304: <div data-field="padrinos_html">
+--- 
+325: 
+326: <div class="event-card fade-in" style="box-shadow: -20px 20px 0px var(--color-secondary);">
+327: <div class="event-info">
+328: <h2 style="font-family: var(--font-titulos);">Recepción</h2>
+329: <p class="itin-time" data-field="hora_recepcion">20:30 HRS</p>
+330: <p><strong data-field="lugar_recepcion">Salón de Cristal, Hacienda de los Morales</strong></p>
+--- 
+346: </div>
+347: </section>
+348: 
+349: <section class="itinerary-section">
+350: <h2 style="text-align: center; font-family: var(--font-titulos); margin-bottom: 60px;">Cronología del Gran Día</h2>
+351: <div data-field="itin_html">
+--- 
+392: </div>
+393: </section>
+394: 
+395: <section class="galeria-section">
+396: <h2 style="text-align: center; font-family: var(--font-titulos); margin-bottom: 30px;">Historias Guardadas</h2>
+397: <div data-field="galeria_html">
+--- 
+499: requestAnimationFrame(animate);
+500: }
+501: animate();
+502: 
+503: // --- SCRIPT OBLIGATORIO ---
+504: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+--- 
+500: }
+501: animate();
+502: 
+503: // --- SCRIPT OBLIGATORIO ---
+504: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+505: updateCountdown();setInterval(updateCountdown,1000);
+--- 
+528: set('[data-field="fecha_hero"]',fmtDate(d.event_date)||d.event_date);
+529: set('[data-field="hora_ceremonia"]',d.event_time);
+530: set('[data-field="lugar_ceremonia"]',d.venue);
+531: set('[data-field="direccion_ceremonia"]',d.venue_address);
+532: set('[data-field="hora_recepcion"]',d.segunda_sede_json?.hora||d.event_time);
+533: set('[data-field="lugar_recepcion"]',d.segunda_sede_json?.lugar||d.venue);
+--- 
+543: set('[data-field="confirmacion_fecha"]',d.rsvp_config?.confFechaLimite||'Consultar fecha');
+544: set('[data-field="location_url"]',d.location_url||'#');
+545: set('[data-field="location_url_recepcion"]',d.segunda_sede_json?.location_url||d.location_url||'#');
+546: set('[data-field="whatsapp_url"]',waUrl);
+547: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+548: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+--- 
+546: set('[data-field="whatsapp_url"]',waUrl);
+547: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+548: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+549: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+550: const gal=d.gallery_urls||[];
+551: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+--- 
+547: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+548: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+549: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+550: const gal=d.gallery_urls||[];
+551: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+552: document.querySelectorAll('[data-field="itin_html"]').forEach(el=>{if(!d.itinerary_items||!d.itinerary_items.length){el.innerHTML='<div class="itin-empty">El itinerario aparecerá aquí</div>';return;}el.innerHTML=d.itinerary_items.map(item=>\`<div class="itin-item visible"><div class="itin-time">\${item.hora||''}</div><div class="itin-icon">\${item.icono||'✦'}</div><div class="itin-body"><div class="itin-name">\${item.titulo||''}</div><div class="itin-desc">\${item.descripcion||''}</div></div></div>\`).join('');});
+--- 
+558: const regEl=document.querySelector('[data-field="regalos_html"]');if(regEl&&d.regalos_list?.length>0){regEl.innerHTML=d.regalos_list.map(r=>\`<a href="\${r.url||'#'}" target="_blank" class="regalo-link">\${r.nombre}</a>\`).join('');}
+559: const firSec=document.querySelector('[data-section="firmas"]');if(firSec&&d.firmas_enabled)firSec.style.display='block';
+560: if(d.sections_styles){const s=d.sections_styles;const r=document.documentElement;if(s.color_primary)r.style.setProperty('--color-primary',s.color_primary);if(s.color_secondary)r.style.setProperty('--color-secondary',s.color_secondary);if(s.color_bg)r.style.setProperty('--color-bg',s.color_bg);if(s.font_scale)r.style.setProperty('--font-scale',s.font_scale);if(s.font_titulos||s.font_cuerpo){const fonts=[s.font_titulos,s.font_cuerpo].filter(Boolean).map(f=>f.replace(/ /g,'+')).join('&family=');const ex=document.getElementById('dynamic-fonts');if(ex)ex.remove();const lk=document.createElement('link');lk.id='dynamic-fonts';lk.rel='stylesheet';lk.href=\`https://fonts.googleapis.com/css2?family=\${fonts}:wght@300;400;600;700&display=swap\`;document.head.appendChild(lk);lk.onload=()=>{if(s.font_titulos)r.style.setProperty('--font-titulos',\`'\${s.font_titulos}', serif\`);if(s.font_cuerpo)r.style.setProperty('--font-cuerpo',\`'\${s.font_cuerpo}', sans-serif\`);};}if(s.animaciones){const ex=document.getElementById('anim-override');if(ex)ex.remove();const st=document.createElement('style');st.id='anim-override';if(s.animaciones==='sin_animaciones'){st.innerHTML='*{animation:none!important;transition:none!important}.fade-in{opacity:1!important;transform:none!important}';}else if(s.animaciones==='dinamico'){st.innerHTML='.fade-in.visible{animation:dynamicIn .5s cubic-bezier(.34,1.56,.64,1) forwards}@keyframes dynamicIn{from{opacity:0;transform:translateX(-20px) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}';}document.head.appendChild(st);}}
+561: const re=d.rsvp_config?.enabled??d.rsvp_config?.confHabilitada??true;
+562: document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el=>{el.style.pointerEvents=re?'auto':'none';el.style.opacity=re?'1':'.4';if(re)el.href=waUrl;});
+563: updateCountdown();
+--- 
+
+=== src/templates/boda_editorial.ts ===
+222: <p data-field="padre_novio">Sr. Victor Manuel Espinoza</p>
+223: </div>
+224: </div>
+225: <div class="familia-block fade-in">
+226: <h3>Corte de Honor</h3>
+227: <div data-field="padrinos_html">
+--- 
+248: <a href="#" class="btn-gold" data-field="location_url" style="margin-top:20px;">Ver Mapa</a>
+249: </div>
+250: <div class="evento-card fade-in">
+251: <h2 class="evento-title">Recepción</h2>
+252: <p class="itin-time" data-field="hora_recepcion" style="color:var(--color-primary);font-size:1.1rem;margin-bottom:1rem;">19:30 HRS</p>
+253: <p><strong data-field="lugar_recepcion">Hacienda San José Lavista</strong></p>
+--- 
+275: </section>
+276: 
+277: <!-- 7. ITINERARIO -->
+278: <section class="itinerario-section">
+279: <h2 style="text-align:center;font-family:var(--font-titulos);margin-bottom:50px;">Nuestra Historia en Horas</h2>
+280: <div class="itin-container" data-field="itin_html">
+--- 
+321: </div>
+322: </section>
+323: 
+324: <!-- 8. GALERÍA -->
+325: <section class="galeria-section">
+326: <div data-field="galeria_html">
+--- 
+376: <p style="font-family:var(--font-serif);font-size:1.5rem;"><span data-field="novia">GIOVANNA</span> & <span data-field="novio">VICTOR</span></p>
+377: <p style="font-size:.7rem;letter-spacing:2px;opacity:.5;margin-top:10px;" data-field="fecha_hero">OCTUBRE 2026</p>
+378: </footer>
+379: 
+380: <script>
+381: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+--- 
+377: <p style="font-size:.7rem;letter-spacing:2px;opacity:.5;margin-top:10px;" data-field="fecha_hero">OCTUBRE 2026</p>
+378: </footer>
+379: 
+380: <script>
+381: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+382: updateCountdown();setInterval(updateCountdown,1000);
+--- 
+405: set('[data-field="fecha_hero"]',fmtDate(d.event_date)||d.event_date);
+406: set('[data-field="hora_ceremonia"]',d.event_time);
+407: set('[data-field="lugar_ceremonia"]',d.venue);
+408: set('[data-field="direccion_ceremonia"]',d.venue_address);
+409: set('[data-field="hora_recepcion"]',d.segunda_sede_json?.hora||d.event_time);
+410: set('[data-field="lugar_recepcion"]',d.segunda_sede_json?.lugar||d.venue);
+--- 
+420: set('[data-field="confirmacion_fecha"]',d.rsvp_config?.confFechaLimite||'Consultar fecha');
+421: set('[data-field="location_url"]',d.location_url||'#');
+422: set('[data-field="location_url_recepcion"]',d.segunda_sede_json?.location_url||d.location_url||'#');
+423: set('[data-field="whatsapp_url"]',waUrl);
+424: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+425: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+--- 
+423: set('[data-field="whatsapp_url"]',waUrl);
+424: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+425: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+426: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+427: const gal=d.gallery_urls||[];
+428: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+--- 
+424: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+425: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+426: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+427: const gal=d.gallery_urls||[];
+428: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+429: document.querySelectorAll('[data-field="itin_html"]').forEach(el=>{if(!d.itinerary_items||!d.itinerary_items.length){el.innerHTML='<div class="itin-empty">El itinerario aparecerá aquí</div>';return;}el.innerHTML=d.itinerary_items.map(item=>\`<div class="itin-item visible"><div class="itin-time">\${item.hora||''}</div><div class="itin-icon">\${item.icono||'✦'}</div><div class="itin-body"><div class="itin-name">\${item.titulo||''}</div><div class="itin-desc">\${item.descripcion||''}</div></div></div>\`).join('');});
+--- 
+435: const regEl=document.querySelector('[data-field="regalos_html"]');if(regEl&&d.regalos_list?.length>0){regEl.innerHTML=d.regalos_list.map(r=>\`<a href="\${r.url||'#'}" target="_blank" class="regalo-link">\${r.nombre}</a>\`).join('');}
+436: const firSec=document.querySelector('[data-section="firmas"]');if(firSec&&d.firmas_enabled)firSec.style.display='block';
+437: if(d.sections_styles){const s=d.sections_styles;const r=document.documentElement;if(s.color_primary)r.style.setProperty('--color-primary',s.color_primary);if(s.color_secondary)r.style.setProperty('--color-secondary',s.color_secondary);if(s.color_bg)r.style.setProperty('--color-bg',s.color_bg);if(s.font_scale)r.style.setProperty('--font-scale',s.font_scale);if(s.font_titulos||s.font_cuerpo){const fonts=[s.font_titulos,s.font_cuerpo].filter(Boolean).map(f=>f.replace(/ /g,'+')).join('&family=');const ex=document.getElementById('dynamic-fonts');if(ex)ex.remove();const lk=document.createElement('link');lk.id='dynamic-fonts';lk.rel='stylesheet';lk.href=\`https://fonts.googleapis.com/css2?family=\${fonts}:wght@300;400;600;700&display=swap\`;document.head.appendChild(lk);lk.onload=()=>{if(s.font_titulos)r.style.setProperty('--font-titulos',\`'\${s.font_titulos}', serif\`);if(s.font_cuerpo)r.style.setProperty('--font-cuerpo',\`'\${s.font_cuerpo}', sans-serif\`);};}if(s.animaciones){const ex=document.getElementById('anim-override');if(ex)ex.remove();const st=document.createElement('style');st.id='anim-override';if(s.animaciones==='sin_animaciones'){st.innerHTML='*{animation:none!important;transition:none!important}.fade-in{opacity:1!important;transform:none!important}';}else if(s.animaciones==='dinamico'){st.innerHTML='.fade-in.visible{animation:dynamicIn .5s cubic-bezier(.34,1.56,.64,1) forwards}@keyframes dynamicIn{from{opacity:0;transform:translateX(-20px) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}';}document.head.appendChild(st);}}
+438: const re=d.rsvp_config?.enabled??d.rsvp_config?.confHabilitada??true;
+439: document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el=>{el.style.pointerEvents=re?'auto':'none';el.style.opacity=re?'1':'.4';if(re)el.href=waUrl;});
+440: updateCountdown();
+--- 
+
+=== src/templates/boda_etereo.ts ===
+331: <p data-field="padre_novio" style="font-size:1.3rem;">Alberto Gallegos</p>
+332: </div>
+333: </div>
+334: <div class="padrinos-list fade-in">
+335: <h3 style="font-family:var(--font-titulos); margin-bottom:1.5rem;">Corte de Honor</h3>
+336: <div data-field="padrinos_html">
+--- 
+357: <a href="#" data-field="location_url" class="btn-maps">VER MAPA</a>
+358: </div>
+359: <div style="flex:1; padding:3rem; background:rgba(150,123,182,0.05); border-radius:0 20px 20px 0;">
+360: <h2 style="font-family:var(--font-titulos); margin-bottom:1rem;">Recepción</h2>
+361: <p data-field="hora_recepcion" style="color:var(--color-primary); font-size:1.2rem;">20:30 HRS</p>
+362: <p data-field="lugar_recepcion" style="font-weight:bold; margin-top:1rem;">Ex-Hacienda Santa Mónica</p>
+--- 
+385: </section>
+386: 
+387: <!-- 7. ITINERARIO -->
+388: <section class="itin-container">
+389: <h2 style="text-align:center; font-family:var(--font-titulos); margin-bottom:4rem;">El Itinerario del Sueño</h2>
+390: <div data-field="itin_html">
+--- 
+431: </div>
+432: </section>
+433: 
+434: <!-- 8. GALERÍA -->
+435: <section class="fade-in">
+436: <div data-field="galeria_html">
+--- 
+512: initCanvas();draw();
+513: </script>
+514: 
+515: <!-- SCRIPT PRINCIPAL -->
+516: <script>
+517: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+--- 
+513: </script>
+514: 
+515: <!-- SCRIPT PRINCIPAL -->
+516: <script>
+517: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+518: updateCountdown();setInterval(updateCountdown,1000);
+--- 
+541: set('[data-field="fecha_hero"]',fmtDate(d.event_date)||d.event_date);
+542: set('[data-field="hora_ceremonia"]',d.event_time);
+543: set('[data-field="lugar_ceremonia"]',d.venue);
+544: set('[data-field="direccion_ceremonia"]',d.venue_address);
+545: set('[data-field="hora_recepcion"]',d.segunda_sede_json?.hora||d.event_time);
+546: set('[data-field="lugar_recepcion"]',d.segunda_sede_json?.lugar||d.venue);
+--- 
+556: set('[data-field="confirmacion_fecha"]',d.rsvp_config?.confFechaLimite||'Consultar fecha');
+557: set('[data-field="location_url"]',d.location_url||'#');
+558: set('[data-field="location_url_recepcion"]',d.segunda_sede_json?.location_url||d.location_url||'#');
+559: set('[data-field="whatsapp_url"]',waUrl);
+560: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+561: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+--- 
+559: set('[data-field="whatsapp_url"]',waUrl);
+560: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+561: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+562: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+563: const gal=d.gallery_urls||[];
+564: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+--- 
+560: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+561: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+562: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+563: const gal=d.gallery_urls||[];
+564: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+565: document.querySelectorAll('[data-field="itin_html"]').forEach(el=>{if(!d.itinerary_items||!d.itinerary_items.length){el.innerHTML='<div class="itin-empty">El itinerario aparecerá aquí</div>';return;}el.innerHTML=d.itinerary_items.map(item=>\`<div class="itin-item visible"><div class="itin-time">\${item.hora||''}</div><div class="itin-icon">\${item.icono||'✦'}</div><div class="itin-body"><div class="itin-name">\${item.titulo||''}</div><div class="itin-desc">\${item.descripcion||''}</div></div></div>\`).join('');});
+--- 
+571: const regEl=document.querySelector('[data-field="regalos_html"]');if(regEl&&d.regalos_list?.length>0){regEl.innerHTML=d.regalos_list.map(r=>\`<a href="\${r.url||'#'}" target="_blank" class="regalo-link">\${r.nombre}</a>\`).join('');}
+572: const firSec=document.querySelector('[data-section="firmas"]');if(firSec&&d.firmas_enabled)firSec.style.display='block';
+573: if(d.sections_styles){const s=d.sections_styles;const r=document.documentElement;if(s.color_primary)r.style.setProperty('--color-primary',s.color_primary);if(s.color_secondary)r.style.setProperty('--color-secondary',s.color_secondary);if(s.color_bg)r.style.setProperty('--color-bg',s.color_bg);if(s.font_scale)r.style.setProperty('--font-scale',s.font_scale);if(s.font_titulos||s.font_cuerpo){const fonts=[s.font_titulos,s.font_cuerpo].filter(Boolean).map(f=>f.replace(/ /g,'+')).join('&family=');const ex=document.getElementById('dynamic-fonts');if(ex)ex.remove();const lk=document.createElement('link');lk.id='dynamic-fonts';lk.rel='stylesheet';lk.href=\`https://fonts.googleapis.com/css2?family=\${fonts}:wght@300;400;600;700&display=swap\`;document.head.appendChild(lk);lk.onload=()=>{if(s.font_titulos)r.style.setProperty('--font-titulos',\`'\${s.font_titulos}', serif\`);if(s.font_cuerpo)r.style.setProperty('--font-cuerpo',\`'\${s.font_cuerpo}', sans-serif\`);};}if(s.animaciones){const ex=document.getElementById('anim-override');if(ex)ex.remove();const st=document.createElement('style');st.id='anim-override';if(s.animaciones==='sin_animaciones'){st.innerHTML='*{animation:none!important;transition:none!important}.fade-in{opacity:1!important;transform:none!important}';}else if(s.animaciones==='dinamico'){st.innerHTML='.fade-in.visible{animation:dynamicIn .5s cubic-bezier(.34,1.56,.64,1) forwards}@keyframes dynamicIn{from{opacity:0;transform:translateX(-20px) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}';}document.head.appendChild(st);}}
+574: const re=d.rsvp_config?.enabled??d.rsvp_config?.confHabilitada??true;
+575: document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el=>{el.style.pointerEvents=re?'auto':'none';el.style.opacity=re?'1':'.4';if(re)el.href=waUrl;});
+576: updateCountdown();
+--- 
+
+=== src/templates/boda_fineart.ts ===
+226: </div>
+227: </div>
+228: </div>
+229: <div class="glass-panel fade-in" style="padding:40px;">
+230: <h3 style="font-family:var(--font-titulos);font-size:1.8rem;margin-bottom:20px;">Nuestros Padrinos</h3>
+231: <div data-field="padrinos_html">
+--- 
+256: </div>
+257: <div class="event-card glass-panel fade-in">
+258: <span style="font-size:3rem;">🥂</span>
+259: <h4>Recepción</h4>
+260: <p style="color:var(--color-primary);font-weight:bold;" data-field="hora_recepcion">19:30 HRS</p>
+261: <p data-field="lugar_recepcion" style="font-weight:600;margin-top:10px;">Hacienda de los Laureles</p>
+--- 
+286: </section>
+287: 
+288: <!-- 7. ITINERARIO -->
+289: <section class="section-padding itinerary-section">
+290: <h2 style="text-align:center;font-family:var(--font-titulos);font-size:2.5rem;margin-bottom:60px;">Nuestra Historia en Horas</h2>
+291: <div class="itin-wrapper" data-field="itin_html">
+--- 
+318: </section>
+319: 
+320: <!-- 8. GALERÍA -->
+321: <section class="section-padding">
+322: <h2 style="text-align:center;font-family:var(--font-titulos);font-size:2.5rem;margin-bottom:50px;">Love Gallery</h2>
+323: <div data-field="galeria_html">
+--- 
+384: document.addEventListener('mousemove', e => {
+385: if(cursor){ cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px'; }
+386: });
+387: 
+388: // Countdown
+389: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+--- 
+385: if(cursor){ cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px'; }
+386: });
+387: 
+388: // Countdown
+389: function updateCountdown(){const el=document.querySelector('[data-field="fecha_hero"]');const txt=el?el.textContent:'';let target=null;try{const p=txt.match(/(\d{1,2})\s*[·\-de ]+\s*(\w+)\s*[·\-de ]+\s*(\d{4})/i);if(p){const mo={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};const m=mo[p[2].toLowerCase()];if(m!==undefined)target=new Date(parseInt(p[3]),m,parseInt(p[1]));}if(!target)target=new Date(txt);}catch(e){}if(!target||isNaN(target))return;const diff=target-new Date();if(diff<0)return;const fmt=n=>String(Math.floor(n)).padStart(2,'0');const dEl=document.getElementById('cd-dias');const hEl=document.getElementById('cd-horas');const mEl=document.getElementById('cd-min');const sEl=document.getElementById('cd-seg');if(dEl)dEl.textContent=fmt(diff/86400000);if(hEl)hEl.textContent=fmt((diff%86400000)/3600000);if(mEl)mEl.textContent=fmt((diff%3600000)/60000);if(sEl)sEl.textContent=fmt((diff%60000)/1000);}
+390: updateCountdown();setInterval(updateCountdown,1000);
+--- 
+417: set('[data-field="fecha_hero"]',fmtDate(d.event_date)||d.event_date);
+418: set('[data-field="hora_ceremonia"]',d.event_time);
+419: set('[data-field="lugar_ceremonia"]',d.venue);
+420: set('[data-field="direccion_ceremonia"]',d.venue_address);
+421: set('[data-field="hora_recepcion"]',d.segunda_sede_json?.hora||d.event_time);
+422: set('[data-field="lugar_recepcion"]',d.segunda_sede_json?.lugar||d.venue);
+--- 
+432: set('[data-field="confirmacion_fecha"]',d.rsvp_config?.confFechaLimite||'Consultar fecha');
+433: set('[data-field="location_url"]',d.location_url||'#');
+434: set('[data-field="location_url_recepcion"]',d.segunda_sede_json?.location_url||d.location_url||'#');
+435: set('[data-field="whatsapp_url"]',waUrl);
+436: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+437: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+--- 
+435: set('[data-field="whatsapp_url"]',waUrl);
+436: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+437: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+438: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+439: const gal=d.gallery_urls||[];
+440: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+--- 
+436: const bp=(list)=>{if(!list||!list.length)return'';return list.map(p=>\`<div class="padrino-item"><span class="padrino-rol">\${p.rol||''}</span><span class="padrino-nombre">\${p.nombre||''}</span></div>\`).join('');};
+437: document.querySelectorAll('[data-field="padrinos_html"]').forEach(el=>{if(d.padrinos_list?.length)el.innerHTML=bp(d.padrinos_list);});
+438: document.querySelectorAll('[data-field="portada_url"]').forEach(el=>{if(el.tagName==='IMG'&&d.cover_image_url)el.src=d.cover_image_url;else if(d.cover_image_url)el.style.backgroundImage=\`url(\${d.cover_image_url})\`;});
+439: const gal=d.gallery_urls||[];
+440: if(gal.length>0){document.querySelectorAll('[data-field="galeria_html"]').forEach(el=>{el.innerHTML=\`<div class="gal-dynamic">\${gal.map(u=>\`<img src="\${u}" alt="" loading="lazy">\`).join('')}</div>\`;});}
+441: document.querySelectorAll('[data-field="itin_html"]').forEach(el=>{if(!d.itinerary_items||!d.itinerary_items.length){el.innerHTML='<div class="itin-empty">El itinerario aparecerá aquí</div>';return;}el.innerHTML=d.itinerary_items.map(item=>\`<div class="itin-item visible"><div class="itin-time">\${item.hora||''}</div><div class="itin-icon">\${item.icono||'✦'}</div><div class="itin-body"><div class="itin-name">\${item.titulo||''}</div><div class="itin-desc">\${item.descripcion||''}</div></div></div>\`).join('');});
+--- 
+447: const regEl=document.querySelector('[data-field="regalos_html"]');if(regEl&&d.regalos_list?.length>0){regEl.innerHTML=d.regalos_list.map(r=>\`<a href="\${r.url||'#'}" target="_blank" class="regalo-link">\${r.nombre}</a>\`).join('');}
+448: const firSec=document.querySelector('[data-section="firmas"]');if(firSec&&d.firmas_enabled)firSec.style.display='block';
+449: if(d.sections_styles){const s=d.sections_styles;const r=document.documentElement;if(s.color_primary)r.style.setProperty('--color-primary',s.color_primary);if(s.color_secondary)r.style.setProperty('--color-secondary',s.color_secondary);if(s.color_bg)r.style.setProperty('--color-bg',s.color_bg);if(s.font_scale)r.style.setProperty('--font-scale',s.font_scale);if(s.font_titulos||s.font_cuerpo){const fonts=[s.font_titulos,s.font_cuerpo].filter(Boolean).map(f=>f.replace(/ /g,'+')).join('&family=');const ex=document.getElementById('dynamic-fonts');if(ex)ex.remove();const lk=document.createElement('link');lk.id='dynamic-fonts';lk.rel='stylesheet';lk.href=\`https://fonts.googleapis.com/css2?family=\${fonts}:wght@300;400;600;700&display=swap\`;document.head.appendChild(lk);lk.onload=()=>{if(s.font_titulos)r.style.setProperty('--font-titulos',\`'\${s.font_titulos}', serif\`);if(s.font_cuerpo)r.style.setProperty('--font-cuerpo',\`'\${s.font_cuerpo}', sans-serif\`);};}if(s.animaciones){const ex=document.getElementById('anim-override');if(ex)ex.remove();const st=document.createElement('style');st.id='anim-override';if(s.animaciones==='sin_animaciones'){st.innerHTML='*{animation:none!important;transition:none!important}.fade-in{opacity:1!important;transform:none!important}';}else if(s.animaciones==='dinamico'){st.innerHTML='.fade-in.visible{animation:dynamicIn .5s cubic-bezier(.34,1.56,.64,1) forwards}@keyframes dynamicIn{from{opacity:0;transform:translateX(-20px) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}';}document.head.appendChild(st);}}
+450: const re=d.rsvp_config?.enabled??d.rsvp_config?.confHabilitada??true;
+451: document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el=>{el.style.pointerEvents=re?'auto':'none';el.style.opacity=re?'1':'.4';if(re)el.href=waUrl;});
+452: updateCountdown();
+--- 

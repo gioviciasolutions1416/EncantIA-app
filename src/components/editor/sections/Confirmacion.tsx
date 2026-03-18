@@ -20,7 +20,7 @@ export default function Confirmacion() {
   // Inicializar rsvp_config si no existe
   const config = eventData.rsvp_config || {
     enabled: true,
-    deadline: '',
+    confFechaLimite: '',
     max_passes: 2,
     menu_options: ['Estandar', 'Vegetariano', 'Infantil'],
     custom_message: 'Por favor, confirma tu asistencia antes de la fecha límite.'
@@ -97,8 +97,8 @@ export default function Confirmacion() {
                 <div className="bg-white border border-rose-100 p-4 rounded-3xl shadow-sm">
                   <input
                     type="date"
-                    value={config.deadline || ''}
-                    onChange={(e) => updateConfig('deadline', e.target.value)}
+                    value={config.confFechaLimite || ''}
+                    onChange={(e) => updateConfig('confFechaLimite', e.target.value)}
                     className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#2d1b2d] p-0"
                   />
                 </div>

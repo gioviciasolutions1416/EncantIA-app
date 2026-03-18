@@ -7,7 +7,7 @@ import {
     MapPin, Calendar, CheckCircle2, X, Loader2, Music, Volume2, VolumeX, 
     Navigation, ExternalLink, Gift, Clock, Camera, Shield, QrCode, Phone, 
     Plus, Heart, Church, Car, Cake, Utensils, IceCream, Flower2, Wine, Trash2,
-    Hash, FileText, Share2, Globe, Sparkles, Quote
+    Hash, FileText, Share2, Globe, Sparkles, Quote, Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
@@ -76,6 +76,8 @@ interface EventData {
     parents_groom_mother_deceased: boolean;
     godparents: string;
     security_enabled: boolean;
+    security_pin_enabled?: boolean;
+    security_pin?: string;
     language: string;
     date_format: string;
     time_format: string;
@@ -441,6 +443,9 @@ export default function InvitePage() {
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
     const [guest, setGuest] = useState<Guest | null>(null);
+    const [pinInput, setPinInput] = useState('');
+    const [pinError, setPinError] = useState(false);
+    const [isPinCorrect, setIsPinCorrect] = useState(false);
 
     const { scrollYProgress } = useScroll();
     const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
@@ -512,6 +517,61 @@ export default function InvitePage() {
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-950 font-sans"><Loader2 className="animate-spin text-[#a35d6a]" size={42} /></div>;
     if (!event) return <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-white p-10 font-sans"><h1 className="text-2xl font-bold mb-4">Invitación No Disponible</h1><p className="opacity-50 text-center text-sm">El link no es válido o ha sido despublicado por el anfitrión.</p></div>;
+
+    const handlePinSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (pinInput === event.security_pin) {
+            setIsPinCorrect(true);
+            setPinError(false);
+        } else {
+            setPinError(true);
+            setPinInput('');
+        }
+    };
+
+    if (event.security_pin_enabled && !isPinCorrect) {
+        return (
+            <div className="min-h-screen w-full bg-[#FDFAFC] flex flex-col items-center justify-center p-6 text-center font-sans">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-xs w-full bg-white border border-rose-100 p-8 rounded-[32px] shadow-xl shadow-rose-100 flex flex-col items-center gap-6"
+                >
+                    <div className="w-16 h-16 rounded-3xl bg-[#a35d6a]/10 flex items-center justify-center text-[#a35d6a]">
+                        <Lock size={30} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-[#2d1b2d]">Evento Protegido</h2>
+                        <p className="text-xs text-gray-400 mt-1">Ingresa el PIN para ver la invitación</p>
+                    </div>
+                    
+                    <form onSubmit={handlePinSubmit} className="w-full space-y-4">
+                        <input
+                            type="password"
+                            maxLength={4}
+                            value={pinInput}
+                            onChange={(e) => {
+                                setPinInput(e.target.value.replace(/\D/g, ''));
+                                setPinError(false);
+                            }}
+                            placeholder="PIN de 4 dígitos"
+                            className="w-full bg-[#fdfafc] border border-rose-100 p-4 rounded-2xl text-center font-black tracking-[0.5em] text-[#a35d6a] outline-none text-xl focus:ring-2 focus:ring-[#a35d6a]/10"
+                        />
+                        <AnimatePresence>
+                            {pinError && (
+                                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-red-500 text-[10px] font-bold">
+                                    PIN incorrecto. Intenta de nuevo.
+                                </motion.p>
+                            )}
+                        </AnimatePresence>
+                        <button type="submit" className="w-full py-4 rounded-xl bg-[#a35d6a] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-200 active:scale-95 transition-transform">
+                            Acceder
+                        </button>
+                    </form>
+                </motion.div>
+            </div>
+        );
+    }
 
     const lang = event.language === 'en' ? 'en' : 'es';
     const t = TRANSLATIONS[lang];
