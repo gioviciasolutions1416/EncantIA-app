@@ -430,6 +430,11 @@ window.addEventListener('message', (e) => {
   if (firmasSection) {
     firmasSection.style.display = 'block';
   }
+
+  // Aplicar estilos por campo
+  if (d.sections_styles?.fields) {
+    applyFieldStyles(d.sections_styles.fields);
+  }
 });
 
 // Toggle música global
@@ -462,41 +467,38 @@ window.enviarFirma = function() {
   if (document.getElementById('firma-nombre')) document.getElementById('firma-nombre').value = '';
   if (document.getElementById('firma-mensaje')) document.getElementById('firma-mensaje').value = '';
 }
-// ── TOOLBAR FLOTANTE DE FORMATO ──────────────────────────────────────
-document.addEventListener('mouseup', () => {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed || !selection.toString().trim()) {
-    window.parent.postMessage({ type: 'TEXT_SELECTION_CLEAR' }, '*');
-    return;
-  }
-  const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  const el = selection.anchorNode?.parentElement;
-  const field = el?.closest('[data-field]')?.getAttribute('data-field') || null;
-  if (!field) {
-    window.parent.postMessage({ type: 'TEXT_SELECTION_CLEAR' }, '*');
-    return;
-  }
-  window.parent.postMessage({
-    type: 'TEXT_SELECTION',
-    field: field,
-    text: selection.toString(),
-    rect: {
-      top: rect.top,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height,
-    }
-  }, '*');
-});
+// ── APLICAR ESTILOS DE FORMATO POR CAMPO ─────────────────────────────
+const applyFieldStyles = (fields) => {
+  if (!fields) return;
+  const sizeMap = {
+    'xs': '0.75rem',
+    'sm': '0.875rem',
+    'base': '1rem',
+    'lg': '1.125rem',
+    'xl': '1.25rem',
+    '2xl': '1.5rem',
+  };
+  const spacingMap = {
+    'tight': '1.25',
+    'normal': '1.5',
+    'relaxed': '1.75',
+    'loose': '2',
+  };
+  Object.entries(fields).forEach(([field, fmt]) => {
+    document.querySelectorAll('[data-field="' + field + '"]').forEach(el => {
+      if (fmt.bold !== undefined) el.style.fontWeight = fmt.bold ? 'bold' : 'normal';
+      if (fmt.italic !== undefined) el.style.fontStyle = fmt.italic ? 'italic' : 'normal';
+      if (fmt.align) el.style.textAlign = fmt.align;
+      if (fmt.size && sizeMap[fmt.size]) el.style.fontSize = sizeMap[fmt.size];
+      if (fmt.font) el.style.fontFamily = "'" + fmt.font + "', serif";
+      if (fmt.color) el.style.color = fmt.color;
+      if (fmt.opacity !== undefined) el.style.opacity = (fmt.opacity / 100).toString();
+      if (fmt.spacing && spacingMap[fmt.spacing]) el.style.lineHeight = spacingMap[fmt.spacing];
+    });
+  });
+};
 
-// Aplicar formato recibido desde el editor
-window.addEventListener('message', (e) => {
-  if (e.data?.type !== 'APPLY_FORMAT') return;
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) return;
-  document.execCommand(e.data.command, false, e.data.value || null);
-});
+
 </script>
 `;
 

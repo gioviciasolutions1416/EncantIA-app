@@ -5,8 +5,7 @@ import { useEditor } from '@/context/EditorContext';
 import { 
   Settings, Users, MessageSquare, Calendar, Shirt, 
   Clock, Gift, Image as ImageIcon, Hotel, CheckCircle2, 
-  PenTool, Music, BarChart3, Share2, Lock, X, Eye, Phone, Palette, Sparkles, Grid, Pencil,
-  Bold, Italic, AlignLeft, AlignCenter, AlignRight
+  PenTool, Music, BarChart3, Share2, Lock, X, Eye, Phone, Palette, Sparkles, Grid, Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { injectData } from '@/lib/template-injector';
@@ -53,43 +52,6 @@ export default function EditorShell({ children }: EditorShellProps) {
   const { activeSection, setActiveSection, eventData, showMobilePreview, setShowMobilePreview, showDesignPanel, setShowDesignPanel, effectivePlan, profile } = useEditor();
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [activeTabDrawer, setActiveTabDrawer] = useState<string | null>(null);
-
-  // ── TOOLBAR FLOTANTE ──
-  const [floatingToolbar, setFloatingToolbar] = useState<{
-    visible: boolean;
-    top: number;
-    left: number;
-    field: string;
-  }>({ visible: false, top: 0, left: 0, field: '' });
-
-  useEffect(() => {
-    const handleMessage = (e: MessageEvent) => {
-      if (e.data?.type === 'TEXT_SELECTION') {
-        const iframeEl = iframeRef.current;
-        if (!iframeEl) return;
-        const iframeRect = iframeEl.getBoundingClientRect();
-        setFloatingToolbar({
-          visible: true,
-          top: iframeRect.top + e.data.rect.top - 48,
-          left: iframeRect.left + e.data.rect.left + (e.data.rect.width / 2) - 100,
-          field: e.data.field,
-        });
-      }
-      if (e.data?.type === 'TEXT_SELECTION_CLEAR') {
-        setFloatingToolbar(prev => ({ ...prev, visible: false }));
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const applyFormat = (command: string, value?: string) => {
-    iframeRef.current?.contentWindow?.postMessage({
-      type: 'APPLY_FORMAT',
-      command,
-      value: value || null,
-    }, '*');
-  };
 
   const tipoKey = eventData.event_type
     ?.toLowerCase()
@@ -267,6 +229,7 @@ export default function EditorShell({ children }: EditorShellProps) {
                 ref={iframeRef}
                 srcDoc={initialHtml}
                 onLoad={() => sendDataToIframe(iframeRef.current)}
+                sandbox="allow-scripts allow-same-origin allow-popups"
                 style={{ 
                   width: '100%', 
                   height: '100%', 
@@ -435,52 +398,6 @@ export default function EditorShell({ children }: EditorShellProps) {
               <button onClick={() => setIsUpgradeModalOpen(false)} className="w-full py-2.5 mt-2 rounded-xl text-[11px] font-bold text-gray-400 hover:bg-gray-50 transition-colors">Cerrar</button>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── FLOATING TEXT TOOLBAR ── */}
-      <AnimatePresence>
-        {floatingToolbar.visible && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="fixed z-[200] flex items-center gap-1 bg-[#2d1b2d] rounded-xl px-2 py-1.5 shadow-2xl"
-            style={{
-              top: floatingToolbar.top,
-              left: floatingToolbar.left,
-            }}
-          >
-            <button onClick={() => applyFormat('bold')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Negrita">
-              <Bold size={13} />
-            </button>
-            <button onClick={() => applyFormat('italic')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Cursiva">
-              <Italic size={13} />
-            </button>
-            <div className="w-px h-4 bg-white/20 mx-0.5" />
-            <button onClick={() => applyFormat('justifyLeft')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Izquierda">
-              <AlignLeft size={13} />
-            </button>
-            <button onClick={() => applyFormat('justifyCenter')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Centro">
-              <AlignCenter size={13} />
-            </button>
-            <button onClick={() => applyFormat('justifyRight')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white" title="Derecha">
-              <AlignRight size={13} />
-            </button>
-            <div className="w-px h-4 bg-white/20 mx-0.5" />
-            <select
-              onChange={(e) => applyFormat('fontSize', e.target.value)}
-              defaultValue=""
-              className="bg-transparent text-white text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer"
-            >
-              <option value="" disabled className="bg-[#2d1b2d]">Aa</option>
-              <option value="2" className="bg-[#2d1b2d]">S</option>
-              <option value="3" className="bg-[#2d1b2d]">M</option>
-              <option value="5" className="bg-[#2d1b2d]">L</option>
-              <option value="7" className="bg-[#2d1b2d]">XL</option>
-            </select>
-          </motion.div>
         )}
       </AnimatePresence>
 

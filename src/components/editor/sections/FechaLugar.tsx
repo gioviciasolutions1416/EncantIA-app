@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useEditor } from '@/context/EditorContext';
+import TextFormatBar from '@/components/editor/TextFormatBar';
 import { 
   Calendar, 
   Clock, 
@@ -83,6 +84,7 @@ export default function FechaLugar() {
               placeholder="Ej: Jardín de los Olivos"
               className="w-full bg-[#fdfafc] border border-rose-100 p-4 rounded-2xl text-sm font-bold text-[#2d1b2d] outline-none focus:border-[#a35d6a]"
             />
+            <TextFormatBar field="lugar_ceremonia" />
           </div>
           <div className="space-y-2">
             <span className="text-[10px] font-bold text-gray-400 uppercase ml-2">Dirección Completa</span>
@@ -93,6 +95,7 @@ export default function FechaLugar() {
               rows={2}
               className="w-full bg-[#fdfafc] border border-rose-100 p-4 rounded-2xl text-sm font-bold text-[#2d1b2d] outline-none focus:border-[#a35d6a] resize-none"
             />
+            <TextFormatBar field="direccion_ceremonia" />
           </div>
         </div>
 
@@ -192,6 +195,7 @@ export default function FechaLugar() {
                   placeholder="Ej: Parroquia de la Santa Cruz"
                   className="w-full bg-white border border-rose-100 p-4 rounded-2xl text-sm font-bold text-[#2d1b2d] outline-none"
                 />
+                <TextFormatBar field="lugar_recepcion" />
               </div>
               <div className="space-y-2">
                 <span className="text-[10px] font-bold text-gray-400 uppercase ml-2">Dirección Completa</span>
@@ -202,6 +206,7 @@ export default function FechaLugar() {
                   rows={2}
                   className="w-full bg-white border border-rose-100 p-4 rounded-2xl text-sm font-bold text-[#2d1b2d] outline-none resize-none"
                 />
+                <TextFormatBar field="direccion_recepcion" />
               </div>
             </div>
 

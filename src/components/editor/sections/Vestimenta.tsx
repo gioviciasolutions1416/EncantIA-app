@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useEditor } from '@/context/EditorContext';
+import TextFormatBar from '@/components/editor/TextFormatBar';
 import { 
   Shirt, 
   Sticker, 
@@ -64,6 +65,7 @@ export default function Vestimenta() {
               className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#2d1b2d] p-0"
             />
           </div>
+          <TextFormatBar field="vestimenta_damas" />
         </section>
 
         {/* Caballeros */}
@@ -80,6 +82,7 @@ export default function Vestimenta() {
               className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#2d1b2d] p-0"
             />
           </div>
+          <TextFormatBar field="vestimenta_caballeros" />
         </section>
       </div>
 
@@ -97,6 +100,7 @@ export default function Vestimenta() {
             className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#7a5060] placeholder:text-rose-200 resize-none"
           />
         </div>
+        <TextFormatBar field="vestimenta_nota" />
       </section>
 
       {/* ── CONFIGURACIÓN VISUAL (ICONOS) ── */}

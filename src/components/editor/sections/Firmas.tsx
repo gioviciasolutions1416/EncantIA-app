@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useEditor } from '@/context/EditorContext';
+import TextFormatBar from '@/components/editor/TextFormatBar';
 import { 
   PenTool, 
   MessageCircleHeart,
@@ -81,6 +82,7 @@ export default function Firmas() {
                   className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#7a5060] placeholder:text-rose-200 outline-none"
                 />
               </div>
+              <TextFormatBar field="firmas_titulo" />
             </section>
 
             {/* ── MENSAJE INVITACIÓN ── */}
@@ -97,6 +99,7 @@ export default function Firmas() {
                   className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#7a5060] placeholder:text-rose-200 resize-none"
                 />
               </div>
+              <TextFormatBar field="firmas_mensaje" />
             </section>
 
             {/* ── NOTA INFO ── */}

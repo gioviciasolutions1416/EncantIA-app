@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useEditor } from '@/context/EditorContext';
+import TextFormatBar from '@/components/editor/TextFormatBar';
 import { 
   Gift, 
   Plus, 
@@ -99,6 +100,7 @@ export default function Regalos() {
                   className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#7a5060] placeholder:text-rose-200 resize-none"
                 />
               </div>
+              <TextFormatBar field="regalo_mensaje" />
             </section>
 
             {/* ── TIENDAS POPULARES RÁPIDAS ── */}

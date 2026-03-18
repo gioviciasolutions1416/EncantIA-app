@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useEditor } from '@/context/EditorContext';
+import TextFormatBar from '@/components/editor/TextFormatBar';
 import { 
   CheckCircle2, 
   Calendar, 
@@ -136,6 +137,7 @@ export default function Confirmacion() {
                   className="w-full bg-transparent border-none focus:ring-0 text-xs font-bold text-[#7a5060] placeholder:text-rose-200 resize-none"
                 />
               </div>
+              <TextFormatBar field="rsvp_mensaje" />
             </section>
 
             {/* ── OPCIONES DE MENÚ ── */}
