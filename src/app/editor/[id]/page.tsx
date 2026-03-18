@@ -226,7 +226,7 @@ function EditorContent() {
           <span className="hidden md:block text-[10px] font-black text-[#a35d6a]/70 uppercase tracking-tight">{completionPercentage}% lista</span>
           <div className="flex items-center gap-3">
           <Link 
-            href={`/${eventData.slug}`} 
+            href={`/invite/${eventData.slug}?preview=true`} 
             target="_blank"
             className="hidden sm:flex items-center gap-2 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-[#7a5060] hover:bg-rose-50 rounded-xl transition-all border border-[#f0dde3]"
           >

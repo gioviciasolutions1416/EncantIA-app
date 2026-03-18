@@ -453,7 +453,9 @@ export default function InvitePage() {
 
     const loadData = async () => {
         const { data } = await supabase.from('events').select('*').eq('slug', slug).single();
-        if (data && data.is_published) {
+        const isPreview = searchParams?.get('preview') === 'true';
+
+        if (data && (data.is_published || isPreview)) {
             setEvent(data as EventData);
             setLiveUrls(data.styles_json?.live_photos || []);
             await supabase.from('events').update({ views: (data.views || 0) + 1 }).eq('id', data.id);
