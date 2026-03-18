@@ -598,6 +598,10 @@ export default function DashboardPage() {
                     <LayoutDashboard size={20} />
                     <span className="text-[10px] font-semibold">Eventos</span>
                 </Link>
+                <Link href="/dashboard/plantillas" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7a5060' }}>
+                    <Palette size={20} />
+                    <span className="text-[10px] font-semibold">Plantillas</span>
+                </Link>
                 <Link href="/dashboard/nuevo" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7a5060' }}>
                     <PlusCircle size={20} />
                     <span className="text-[10px] font-semibold">Crear</span>
