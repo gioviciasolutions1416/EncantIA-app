@@ -166,10 +166,10 @@ export const injectData = (templateId: string, eventData: EventData): string => 
   }
 
   // Inyectamos el script de Live Update antes del </body>
-  return finalHtml.replace('</body>', `${getLiveUpdateScript(eventData.music_url || '')}</body>`);
+  return finalHtml.replace('</body>', `${getLiveUpdateScript(eventData.music_url || '', eventData.is_bilingual || false)}</body>`);
 };
 
-export const getLiveUpdateScript = (musicUrl_from_server?: string): string => `
+export const getLiveUpdateScript = (musicUrl_from_server?: string, isBilingual_from_server?: boolean): string => `
 <script>
 window.initMusicFloatingIcon = function(url) {
   if (!url) return;
@@ -182,7 +182,7 @@ window.initMusicFloatingIcon = function(url) {
     const icon = document.createElement('div');
     icon.id = 'music-floating-icon';
     icon.innerHTML = '♪';
-    icon.style.cssText = \\\`
+    icon.style.cssText = \`
       position: fixed;
       bottom: 24px;
       left: 24px;
@@ -202,7 +202,7 @@ window.initMusicFloatingIcon = function(url) {
       animation: musicSpin 8s linear infinite;
       box-shadow: 0 4px 20px rgba(163,93,106,0.3);
       transition: all 0.3s ease;
-    \\\`;
+    \`;
     icon.addEventListener('mouseenter', () => {
       icon.style.background = 'rgba(163, 93, 106, 1)';
       icon.style.transform = 'scale(1.1)';
@@ -229,11 +229,11 @@ window.initMusicFloatingIcon = function(url) {
     if (!document.getElementById('music-icon-style')) {
       const style = document.createElement('style');
       style.id = 'music-icon-style';
-      style.innerHTML = \\\`
+      style.innerHTML = \`
         @keyframes musicSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #music-floating-icon { animation: musicSpin 8s linear infinite; }
         #music-floating-icon:hover { animation-play-state: paused; }
-      \\\`;
+      \`;
       document.head.appendChild(style);
     }
 
@@ -244,10 +244,19 @@ window.initMusicFloatingIcon = function(url) {
   }
 };
 
-// Inicializar con la musica provista inicialmente
-if ("\\\${musicUrl_from_server || ''}\\\") {
-  window.initMusicFloatingIcon("\\\${musicUrl_from_server || ''}\\\");
-}
+  window.initBilingual = function(isBilingual) {
+    document.querySelectorAll('[data-bilingual]').forEach(el => {
+      el.style.display = isBilingual ? 'block' : 'none';
+    });
+  };
+
+  // Inicializar con la musica provista inicialmente
+  if ("${musicUrl_from_server || ''}") {
+    window.initMusicFloatingIcon("${musicUrl_from_server || ''}");
+  }
+
+  // Inicializar Bilingual
+  window.initBilingual(${isBilingual_from_server ? 'true' : 'false'});
 
 window.addEventListener('message', (e) => {
   if (e.data?.type !== 'UPDATE_DATA') return;
