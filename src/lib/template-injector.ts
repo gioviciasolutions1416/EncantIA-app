@@ -166,11 +166,89 @@ export const injectData = (templateId: string, eventData: EventData): string => 
   }
 
   // Inyectamos el script de Live Update antes del </body>
-  return finalHtml.replace('</body>', `${getLiveUpdateScript()}</body>`);
+  return finalHtml.replace('</body>', `${getLiveUpdateScript(eventData.music_url || '')}</body>`);
 };
 
-export const getLiveUpdateScript = (): string => `
+export const getLiveUpdateScript = (musicUrl_from_server?: string): string => `
 <script>
+window.initMusicFloatingIcon = function(url) {
+  if (!url) return;
+  const audio = document.getElementById('audio-player');
+  const musicaSection = document.querySelector('[data-section="musica"]');
+  if (audio) { audio.src = url; }
+  if (musicaSection) musicaSection.style.display = 'block';
+
+  if (!document.getElementById('music-floating-icon')) {
+    const icon = document.createElement('div');
+    icon.id = 'music-floating-icon';
+    icon.innerHTML = '♪';
+    icon.style.cssText = \\\`
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(163, 93, 106, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+      cursor: pointer;
+      z-index: 9999;
+      animation: musicSpin 8s linear infinite;
+      box-shadow: 0 4px 20px rgba(163,93,106,0.3);
+      transition: all 0.3s ease;
+    \\\`;
+    icon.addEventListener('mouseenter', () => {
+      icon.style.background = 'rgba(163, 93, 106, 1)';
+      icon.style.transform = 'scale(1.1)';
+    });
+    icon.addEventListener('mouseleave', () => {
+      icon.style.background = 'rgba(163, 93, 106, 0.9)';
+      icon.style.transform = 'scale(1)';
+    });
+    icon.addEventListener('click', () => {
+      const a = document.getElementById('audio-player');
+      if (!a) return;
+      if (a.paused) {
+        a.play();
+        icon.style.animationPlayState = 'running';
+        icon.style.opacity = '1';
+      } else {
+        a.pause();
+        icon.style.animationPlayState = 'paused';
+        icon.style.opacity = '0.4';
+      }
+    });
+    document.body.appendChild(icon);
+
+    if (!document.getElementById('music-icon-style')) {
+      const style = document.createElement('style');
+      style.id = 'music-icon-style';
+      style.innerHTML = \\\`
+        @keyframes musicSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #music-floating-icon { animation: musicSpin 8s linear infinite; }
+        #music-floating-icon:hover { animation-play-state: paused; }
+      \\\`;
+      document.head.appendChild(style);
+    }
+
+    setTimeout(() => {
+      const a = document.getElementById('audio-player');
+      if (a) { a.volume = 0.4; a.play().catch(() => {}); }
+    }, 1000);
+  }
+};
+
+// Inicializar con la musica provista inicialmente
+if ("\\\${musicUrl_from_server || ''}\\\") {
+  window.initMusicFloatingIcon("\\\${musicUrl_from_server || ''}\\\");
+}
+
 window.addEventListener('message', (e) => {
   if (e.data?.type !== 'UPDATE_DATA') return;
   const d = e.data.data;
@@ -406,87 +484,8 @@ window.addEventListener('message', (e) => {
 
   // Música
   if (d.music_url) {
-    const audio = document.getElementById('audio-player');
-    const musicaSection = document.querySelector('[data-section="musica"]');
-    if (audio) { audio.src = d.music_url; }
-    if (musicaSection) musicaSection.style.display = 'block';
-
-    // ── ÍCONO MUSICAL FLOTANTE ──
-    if (!document.getElementById('music-floating-icon')) {
-      const icon = document.createElement('div');
-      icon.id = 'music-floating-icon';
-      icon.innerHTML = '♪';
-      icon.style.cssText = \`
-        position: fixed;
-        bottom: 24px;
-        left: 24px;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.15);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255,255,255,0.25);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        color: rgba(255,255,255,0.7);
-        cursor: pointer;
-        z-index: 9999;
-        animation: musicSpin 8s linear infinite;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-      \`;
-      icon.addEventListener('mouseenter', () => {
-        icon.style.background = 'rgba(255,255,255,0.25)';
-        icon.style.transform = 'scale(1.1)';
-      });
-      icon.addEventListener('mouseleave', () => {
-        icon.style.background = 'rgba(255,255,255,0.15)';
-        icon.style.transform = 'scale(1)';
-      });
-      icon.addEventListener('click', () => {
-        const a = document.getElementById('audio-player');
-        if (!a) return;
-        if (a.paused) {
-          a.play();
-          icon.style.animationPlayState = 'running';
-          icon.style.opacity = '1';
-        } else {
-          a.pause();
-          icon.style.animationPlayState = 'paused';
-          icon.style.opacity = '0.4';
-        }
-      });
-      document.body.appendChild(icon);
-
-      // Inyectar animación CSS
-      if (!document.getElementById('music-icon-style')) {
-        const style = document.createElement('style');
-        style.id = 'music-icon-style';
-        style.innerHTML = \`
-          @keyframes musicSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          #music-floating-icon {
-            animation: musicSpin 8s linear infinite;
-          }
-          #music-floating-icon:hover {
-            animation-play-state: paused;
-          }
-        \`;
-        document.head.appendChild(style);
-      }
-
-      // Autoplay suave
-      setTimeout(() => {
-        const a = document.getElementById('audio-player');
-        if (a) {
-          a.volume = 0.4;
-          a.play().catch(() => {});
-        }
-      }, 1000);
+    if (typeof window.initMusicFloatingIcon === 'function') {
+      window.initMusicFloatingIcon(d.music_url);
     }
   }
 
