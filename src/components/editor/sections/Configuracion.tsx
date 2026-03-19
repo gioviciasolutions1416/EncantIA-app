@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useEditor } from '@/context/EditorContext';
+
 import { 
   Globe, 
   UserCheck, 
@@ -64,6 +65,7 @@ export default function Configuracion() {
           <p className="text-[10px] text-gray-400 font-medium">
             Habilita textos en Español e Inglés para tus invitados internacionales.
           </p>
+
         </div>
 
         {/* Solo Adultos */}

@@ -19,7 +19,6 @@ import Vestimenta from '@/components/editor/sections/Vestimenta';
 import Itinerario from '@/components/editor/sections/Itinerario';
 import Galeria from '@/components/editor/sections/Galeria';
 import Confirmacion from '@/components/editor/sections/Confirmacion';
-import Distribucion from '@/components/editor/sections/Distribucion';
 import Regalos from '@/components/editor/sections/Regalos';
 import Musica from '@/components/editor/sections/Musica';
 import Firmas from '@/components/editor/sections/Firmas';
@@ -98,8 +97,6 @@ function EditorContent() {
         return <Galeria />;
       case 'confirmacion':
         return <Confirmacion />;
-      case 'distribucion':
-        return <Distribucion />;
       case 'regalos':
         return <Regalos />;
       case 'hospedaje':

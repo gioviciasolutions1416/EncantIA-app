@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import {
-    LayoutDashboard, PlusCircle, User, LogOut, Eye, Pencil, Users,
+    LayoutDashboard, PlusCircle, User, LogOut, Eye, Pencil, Users, CheckCircle2,
     Calendar, MapPin, PartyPopper, Loader2, Search, X, Menu, Palette, Settings, Shield, Heart, Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +29,7 @@ interface Event {
     views: number;
     guests_count?: number;
     plan?: string;
+    rsvp_count?: number;
 }
 
 // ─── Sidebar ───────────────────────────────────────────────────────────────
@@ -235,16 +236,37 @@ function EventCard({ event, profile }: { event: Event, profile: any }) {
 
                 {/* ── CARD BODY ────────────────────────────────────────────── */}
                 <div className="p-5 flex flex-col flex-1 bg-white">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3 text-[10px] text-[#7a5060]/70 font-light tracking-wide">
-                            <div className="flex items-center gap-1"><Calendar size={11} className="text-[#a35d6a]" /> {formattedDate}</div>
-                            <div className="flex items-center gap-1"><Eye size={11} className="text-[#a35d6a]" /> {event.views || 0}</div>
+                    <div className="flex flex-col gap-3 mb-4">
+                        {/* Fila 1: Fecha y Cuenta Regresiva */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-[11px] text-[#7a5060]/80 font-bold">
+                                <Calendar size={13} className="text-[#a35d6a]" /> {formattedDate}
+                            </div>
+                            {daysLeft > 0 && (
+                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-[#a35d6a] border border-rose-100 uppercase tracking-widest">
+                                    Faltan {daysLeft} días
+                                </span>
+                            )}
                         </div>
-                        {daysLeft > 0 && (
-                            <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-[#a35d6a] border border-rose-100 uppercase tracking-widest">
-                                Faltan {daysLeft} días
-                            </span>
-                        )}
+
+                        {/* Fila 2: Estadísticas con Chips */}
+                        <div className="grid grid-cols-3 gap-1.5">
+                            <div className="flex items-center justify-center gap-1 bg-[#FDF0F3]/60 px-2 py-1.5 rounded-xl text-[#7a5060] border border-[#f0dde3]/20">
+                                <Eye size={11} className="text-[#a35d6a]" />
+                                <span className="text-[10px] font-black">{event.views || 0}</span>
+                                <span className="text-[8px] font-bold opacity-60">Vistas</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-1 bg-[#FDF0F3]/60 px-2 py-1.5 rounded-xl text-[#7a5060] border border-[#f0dde3]/20">
+                                <Users size={11} className="text-[#a35d6a]" />
+                                <span className="text-[10px] font-black">{event.guests_count || 0}</span>
+                                <span className="text-[8px] font-bold opacity-60">Total</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-1 bg-[#FDF0F3]/60 px-2 py-1.5 rounded-xl text-[#7a5060] border border-[#f0dde3]/20">
+                                <CheckCircle2 size={11} className="text-[#a35d6a]" />
+                                <span className="text-[10px] font-black">{event.rsvp_count || 0}</span>
+                                <span className="text-[8px] font-bold opacity-60">Conf.</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-2 mt-auto">
@@ -269,6 +291,27 @@ function EventCard({ event, profile }: { event: Event, profile: any }) {
                         >
                             Previsualizar Invitación
                         </Link>
+
+                        {/* Barra de progreso */}
+                        {(() => {
+                          const fields = [event.title, event.event_date, event.venue, (event as any).cover_image_url, (event as any).message, (event as any).dress_code];
+                          const filled = fields.filter(Boolean).length;
+                          const pct = Math.round((filled / fields.length) * 100);
+                          return (
+                            <div className="mt-3 space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Completado</span>
+                                <span className="text-[9px] font-black text-[#a35d6a]">{pct}%</span>
+                              </div>
+                              <div className="h-1 bg-rose-50 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-[#a35d6a] to-[#7B2D8B] rounded-full transition-all duration-500"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
                     </div>
                 </div>
             </div>
@@ -331,7 +374,7 @@ export default function DashboardPage() {
         try {
             const { data, error } = await supabase
                 .from('events')
-                .select('*, guests(count)')
+                .select('*, guests(count), rsvp:guests(count)')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false });
 
@@ -343,7 +386,8 @@ export default function DashboardPage() {
             if (data) {
                 const mappedEvents = data.map((e: any) => ({
                     ...e,
-                    guests_count: e.guests?.[0]?.count || 0
+                    guests_count: e.guests?.[0]?.count || 0,
+                    rsvp_count: e.rsvp?.[0]?.count || 0
                 }));
                 setEvents(mappedEvents);
             }
@@ -492,26 +536,19 @@ export default function DashboardPage() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="bg-white rounded-2xl px-5 py-4 text-center flex flex-col items-center gap-1 min-w-[90px]"
-                        style={{ boxShadow: '0 4px 20px rgba(163,93,106,0.1)', border: '1px solid #f0dde3' }}>
-                        <p className="text-[#a35d6a]/50 text-[8px] uppercase tracking-[0.3em] font-black">Eventos</p>
-                        <p className="text-[#2d1b2d] font-black text-3xl leading-none"
-                          style={{ fontFamily: "'Playfair Display', serif" }}>{events.length}</p>
-                      </div>
-                      <div className="bg-white rounded-2xl px-5 py-4 text-center flex flex-col items-center gap-1 min-w-[90px]"
-                        style={{ boxShadow: '0 4px 20px rgba(163,93,106,0.1)', border: '1px solid #f0dde3' }}>
-                        <p className="text-[#a35d6a]/50 text-[8px] uppercase tracking-[0.3em] font-black">Publicados</p>
-                        <p className="text-[#2d1b2d] font-black text-3xl leading-none"
-                          style={{ fontFamily: "'Playfair Display', serif" }}>{events.filter(e => e.is_published).length}</p>
-                      </div>
-                      <div className="bg-gradient-to-br from-[#a35d6a] to-[#7B2D8B] rounded-2xl px-5 py-4 text-center flex flex-col items-center gap-1 min-w-[90px]"
-                        style={{ boxShadow: '0 8px 25px rgba(163,93,106,0.35)' }}>
-                        <p className="text-white/60 text-[8px] uppercase tracking-[0.3em] font-black">Plan</p>
-                        <p className="text-white font-black text-sm uppercase tracking-wider leading-none mt-1">
-                          {profile?.role === 'admin' ? '⭐ Admin' : profile?.plan || 'Free'}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-3">
+                      {[
+                        { label: 'Eventos', value: events.length },
+                        { label: 'Publicados', value: events.filter(e => e.is_published).length },
+                      ].map((stat) => (
+                        <div key={stat.label}
+                          className="bg-white rounded-2xl px-5 py-4 text-center flex flex-col items-center gap-1 min-w-[90px]"
+                          style={{ boxShadow: '0 4px 20px rgba(163,93,106,0.1)', border: '1px solid #f0dde3' }}>
+                          <p className="text-[#a35d6a]/50 text-[8px] uppercase tracking-[0.3em] font-black">{stat.label}</p>
+                          <p className="text-[#2d1b2d] font-black text-3xl leading-none"
+                            style={{ fontFamily: "'Playfair Display', serif" }}>{stat.value}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

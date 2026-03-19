@@ -63,6 +63,19 @@ export interface EventData {
   voice_url?: string;
   survey_active?: boolean;
   updated_at?: string;
+
+  // Campos traducidos EN
+  message_en?: string;
+  message_secondary_en?: string;
+  dress_code_en?: string;
+  dress_code_women_en?: string;
+  dress_code_men_en?: string;
+  dress_code_detail_en?: string;
+  gift_message_en?: string;
+  venue_en?: string;
+  venue_address_en?: string;
+  itinerary_items_en?: any[];
+  padrinos_list_en?: any[];
 }
 
 export const loadEvent = async (id: string): Promise<EventData | null> => {

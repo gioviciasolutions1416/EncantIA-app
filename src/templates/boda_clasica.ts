@@ -792,70 +792,9 @@ export const BODA_CLASICA = `
         const ae = document.querySelector('[data-field="solo_adultos"]');
         if (ae) ae.style.display = (d.adults_only === true || d.adults_only === 'true') ? 'block' : 'none';
 
-        // Idioma dual — botón flotante ES|EN
-        const existingBtn = document.getElementById('lang-toggle-btn');
-        if (existingBtn) existingBtn.remove();
-        if (d.is_bilingual === true || d.is_bilingual === 'true') {
-            const btn = document.createElement('div');
-            btn.id = 'lang-toggle-btn';
-            btn.innerHTML = '<span id="lang-es" style="font-weight:bold;">ES</span> | <span id="lang-en" style="opacity:0.6;">EN</span>';
-            btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:rgba(0,0,0,0.65);color:white;padding:6px 12px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;cursor:pointer;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:all 0.2s;';
-            document.body.appendChild(btn);
-            let currentLang = 'es';
-            btn.addEventListener('click', () => {
-                currentLang = currentLang === 'es' ? 'en' : 'es';
-                document.getElementById('lang-es').style.opacity = currentLang === 'es' ? '1' : '0.6';
-                document.getElementById('lang-en').style.opacity = currentLang === 'en' ? '1' : '0.6';
-                document.getElementById('lang-es').style.fontWeight = currentLang === 'es' ? 'bold' : 'normal';
-                document.getElementById('lang-en').style.fontWeight = currentLang === 'en' ? 'bold' : 'normal';
-                // 1. Static element show/hide
-                document.querySelectorAll('[data-bilingual]').forEach(el => {
-                    el.style.display = currentLang === 'en' ? 'block' : 'none';
-                });
-                document.querySelectorAll('[data-es]').forEach(el => {
-                    el.style.display = currentLang === 'es' ? '' : 'none';
-                });
-
-                // 2. Dynamic nodes splitting by "|"
-                document.querySelectorAll('[data-field]').forEach(el => {
-                    if (el.tagName === 'A' || el.tagName === 'IMG') return;
-                    let txt = el.getAttribute('data-full-txt');
-                    if (!txt) {
-                        txt = el.innerHTML;
-                        el.setAttribute('data-full-txt', txt);
-                    }
-                    if (txt.includes('|')) {
-                        const parts = txt.split('|');
-                        el.innerHTML = currentLang === 'es' ? parts[0].trim() : parts[1].trim();
-                    }
-                });
-
-                // 3. Forzar traducción en Fecha y RSVP botones
-                const dateEl = document.querySelector('[data-field="fecha_hero"]');
-                if (dateEl && d.event_date) {
-                    const date = new Date(d.event_date + 'T12:00:00');
-                    dateEl.innerHTML = date.toLocaleDateString(currentLang === 'en' ? 'en-US' : 'es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-                }
-                const rsvpBtn = document.querySelector('[data-field="whatsapp_url"]');
-                if (rsvpBtn) {
-                    const rsvpEnabled = d.rsvp_config?.enabled ?? d.rsvp_config?.confHabilitada ?? true;
-                    if (rsvpEnabled) rsvpBtn.innerText = currentLang === 'en' ? 'Confirm Attendance' : 'Confirmar Asistencia';
-                    else rsvpBtn.innerText = currentLang === 'en' ? 'Confirmation unavailable' : 'Confirmación no disponible';
-                }
-            });
-        }
-
-        // 3. Aplica split en cada actualización de datos
-        document.querySelectorAll('[data-field]').forEach(el => {
-            if (el.tagName === 'A' || el.tagName === 'IMG') return;
-            const txt = el.innerHTML;
-            if (txt.includes('|')) {
-                const parts = txt.split('|');
-                const existingBtn = document.getElementById('lang-toggle-btn');
-                const isEn = existingBtn && document.getElementById('lang-en')?.style?.fontWeight === 'bold';
-                el.innerHTML = isEn ? parts[1].trim() : parts[0].trim();
-                el.setAttribute('data-full-txt', txt);
-            }
+        // Idioma dual
+        document.querySelectorAll('[data-bilingual]').forEach(el => {
+            el.style.display = d.is_bilingual ? 'block' : 'none';
         });
         if(d.sections_styles){
             const s=d.sections_styles;const r=document.documentElement;

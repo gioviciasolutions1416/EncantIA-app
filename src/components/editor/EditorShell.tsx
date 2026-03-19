@@ -5,7 +5,7 @@ import { useEditor } from '@/context/EditorContext';
 import { 
   Settings, Users, MessageSquare, Calendar, Shirt, 
   Clock, Gift, Image as ImageIcon, Hotel, CheckCircle2, 
-  PenTool, Music, BarChart3, Share2, Lock, X, Eye, Phone, Palette, Sparkles, Grid, Pencil
+  PenTool, Music, BarChart3, Lock, X, Eye, Phone, Palette, Sparkles, Grid, Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { injectData } from '@/lib/template-injector';
@@ -17,7 +17,7 @@ const MOBILE_TABS = [
   { id: 'personas', label: 'Personas', icon: Users, sections: ['protagonistas', 'vestimenta'] },
   { id: 'detalles', label: 'Detalles', icon: Sparkles, sections: ['mensajes', 'itinerario', 'regalos', 'fecha_lugar'] },
   { id: 'fotos', label: 'Fotos', icon: ImageIcon, sections: ['galeria'] },
-  { id: 'mas', label: 'Más', icon: Grid, sections: ['confirmacion', 'hospedaje', 'musica', 'firmas', 'encuesta', 'distribucion'] },
+  { id: 'mas', label: 'Más', icon: Grid, sections: ['confirmacion', 'hospedaje', 'musica', 'firmas', 'encuesta'] },
 ];
 
 const SECTIONS = [
@@ -26,7 +26,6 @@ const SECTIONS = [
   { id: 'mensajes', icon: MessageSquare, label: 'Mensajes', plan: 'prueba' },
   { id: 'fecha_lugar', icon: Calendar, label: 'Fecha y Lugar', plan: 'plata' },
   { id: 'vestimenta', icon: Shirt, label: 'Vestimenta', plan: 'plata' },
-  { id: 'distribucion', icon: Share2, label: 'Distribución', plan: 'plata' },
   { id: 'itinerario', icon: Clock, label: 'Itinerario', plan: 'oro' },
   { id: 'galeria', icon: ImageIcon, label: 'Galería', plan: 'oro' },
   { id: 'confirmacion', icon: CheckCircle2, label: 'RSVP', plan: 'oro' },
@@ -53,6 +52,7 @@ export default function EditorShell({ children }: EditorShellProps) {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [activeTabDrawer, setActiveTabDrawer] = useState<string | null>(null);
 
+
   const tipoKey = eventData.event_type
     ?.toLowerCase()
     .normalize('NFD')
@@ -63,7 +63,7 @@ export default function EditorShell({ children }: EditorShellProps) {
   const config = SECCIONES_POR_EVENTO[tipoKey] 
     || SECCIONES_POR_EVENTO['boda'];
 
-  const ALWAYS_SHOW = ['configuracion', 'protagonistas', 'mensajes', 'fecha_lugar', 'distribucion', 'confirmacion'];
+  const ALWAYS_SHOW = ['configuracion', 'protagonistas', 'mensajes', 'fecha_lugar', 'confirmacion'];
 
   const filteredSections = SECTIONS.filter(section => {
     if (ALWAYS_SHOW.includes(section.id)) return true;
@@ -79,15 +79,15 @@ export default function EditorShell({ children }: EditorShellProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const mobileIframeRef = useRef<HTMLIFrameElement>(null);
   
+  const eventDataStr = JSON.stringify(eventData);
+
   // Cargamos el HTML inicial solo una vez o cuando cambia la plantilla
   const [initialHtml, setInitialHtml] = useState('');
-  
   useEffect(() => {
-    const html = injectData(eventData.template_id || 'boda_1', eventData);
-    setInitialHtml(html);
-  }, [eventData.template_id]);
+    setInitialHtml(injectData(eventData.template_id || 'boda_clasica', eventData));
+  }, [eventDataStr]);
 
-  const eventDataStr = JSON.stringify(eventData);
+
 
   const sendDataToIframe = (iframeNode: HTMLIFrameElement | null) => {
     if (!iframeNode?.contentWindow) return;
@@ -123,6 +123,8 @@ export default function EditorShell({ children }: EditorShellProps) {
     }, 500); 
     return () => clearTimeout(timer);
   }, [eventDataStr]);
+
+
 
   // ── SCROLL TO TOP ──
   const formRef = useRef<HTMLElement>(null);
@@ -175,6 +177,13 @@ export default function EditorShell({ children }: EditorShellProps) {
               </button>
             );
           })}
+          <a 
+            href="/dashboard/invitados"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest text-[#7a5060]/70 hover:bg-rose-50/50 border border-dashed border-rose-100 mt-4 transition-all"
+          >
+            <Users size={16} className="text-[#a35d6a]/50" />
+            Gestionar Invitados
+          </a>
         </nav>
       </aside>
 

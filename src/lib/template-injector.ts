@@ -1,5 +1,6 @@
 import { TEMPLATE_HTML_MAP } from '@/templates';
 import { EventData } from './editor-supabase';
+import { TRANSLATIONS } from './translations';
 
 const buildItinerarioHtml = (items: any[]) => {
   if (!items || items.length === 0) return '<div class="itin-empty">El itinerario aparecerá aquí</div>';
@@ -122,7 +123,7 @@ export const injectData = (templateId: string, eventData: EventData): string => 
     location_waze_url: eventData.location_waze_url || '#',
     location_url_recepcion: eventData.segunda_sede_json?.location_url || eventData.location_url || '#',
     solo_adultos: `<div data-field="solo_adultos" style="display: ${eventData.adults_only ? 'block' : 'none'}; text-align: center; font-weight: bold; color: var(--color-primary); margin: 1rem 0; font-size: 0.8rem; letter-spacing: 0.1em;">🚫 EVENTO SOLO PARA ADULTOS</div>`,
-    idioma_dual: `<div data-bilingual style="display: ${eventData.is_bilingual ? 'block' : 'none'}; text-align: center; font-style: italic; color: var(--warm); font-size: 0.8rem; margin-top: 0.5rem;">We would love for you to celebrate with us</div>`
+    idioma_dual: ""
   };
 
   // CSS Global inyectado (eliminamos las etiquetas <style> y lo inyectamos antes del primer </style>)
@@ -165,12 +166,16 @@ export const injectData = (templateId: string, eventData: EventData): string => 
     finalHtml = finalHtml.slice(0, styleIdx) + globalCss + finalHtml.slice(styleIdx);
   }
 
+
+
   // Inyectamos el script de Live Update antes del </body>
-  return finalHtml.replace('</body>', `${getLiveUpdateScript(eventData.music_url || '', eventData.is_bilingual || false)}</body>`);
+  return finalHtml.replace('</body>', `${getLiveUpdateScript(eventData.music_url || '')}</body>`);
 };
 
-export const getLiveUpdateScript = (musicUrl_from_server?: string, isBilingual_from_server?: boolean): string => `
+export const getLiveUpdateScript = (musicUrl_from_server?: string): string => `
 <script>
+
+
 window.initMusicFloatingIcon = function(url) {
   if (!url) return;
   const audio = document.getElementById('audio-player');
@@ -181,7 +186,7 @@ window.initMusicFloatingIcon = function(url) {
   if (!document.getElementById('music-floating-icon')) {
     const icon = document.createElement('div');
     icon.id = 'music-floating-icon';
-    icon.innerHTML = '♪';
+    icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
     icon.style.cssText = \`
       position: fixed;
       bottom: 24px;
@@ -218,10 +223,12 @@ window.initMusicFloatingIcon = function(url) {
         a.play();
         icon.style.animationPlayState = 'running';
         icon.style.opacity = '1';
+        icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
       } else {
         a.pause();
         icon.style.animationPlayState = 'paused';
         icon.style.opacity = '0.4';
+        icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle><line x1="1" y1="1" x2="23" y2="23" stroke="currentColor"></line></svg>';
       }
     });
     document.body.appendChild(icon);
@@ -248,6 +255,7 @@ window.initMusicFloatingIcon = function(url) {
     document.querySelectorAll('[data-bilingual]').forEach(el => {
       el.style.display = isBilingual ? 'block' : 'none';
     });
+    if (typeof window.translateAll === 'function') window.translateAll(isBilingual);
   };
 
   // Inicializar con la musica provista inicialmente
@@ -255,21 +263,30 @@ window.initMusicFloatingIcon = function(url) {
     window.initMusicFloatingIcon("${musicUrl_from_server || ''}");
   }
 
-  // Inicializar Bilingual
-  window.initBilingual(${isBilingual_from_server ? 'true' : 'false'});
+
 
 window.addEventListener('message', (e) => {
   if (e.data?.type !== 'UPDATE_DATA') return;
   const d = e.data.data;
+  if (!d) return;
+
+  // ── CAMPOS EN/ES según idioma activo ─────────────────────────────────
+  const lang = 'es';
+  const t = (esVal, enVal) => esVal || '';
+  const isEn = false;
   
   const set = (sel, val) => { 
     document.querySelectorAll(sel).forEach(el => {
+      let finalVal = val || '';
+      if (typeof finalVal === 'string' && finalVal.includes('|')) {
+        finalVal = isEn ? finalVal.split('|')[1]?.trim() : finalVal.split('|')[0]?.trim();
+      }
       if (el.tagName === 'A') {
         if (sel.includes('whatsapp_url') || el.href.includes('wa.me')) {
-          el.href = val;
+          el.href = finalVal;
         }
       } else {
-        el.innerHTML = val || '';
+        el.innerHTML = finalVal;
       }
     });
   };
@@ -280,10 +297,6 @@ window.addEventListener('message', (e) => {
     adultosEl.style.display = d.adults_only ? 'block' : 'none';
   }
   
-  // Idioma dual
-  document.querySelectorAll('[data-bilingual]').forEach(el => {
-    el.style.display = d.is_bilingual ? 'block' : 'none';
-  });
 
   const novia = d.title?.split('&')[0]?.trim() || d.title;
   const novio = d.title?.split('&')[1]?.trim() || '';
@@ -299,9 +312,13 @@ window.addEventListener('message', (e) => {
   };
 
   // Padrinos
+  const padList = lang === 'en' && d.padrinos_list_en?.length > 0 
+    ? d.padrinos_list_en 
+    : d.padrinos_list;
+
   const padHtml = d.event_type === 'Bautizo' 
     ? [d.padrino, d.madrina].filter(Boolean).join('<br>')
-    : buildPadrinos(d.padrinos_list);
+    : buildPadrinos(padList);
   
   document.querySelectorAll('[data-field="padrinos"], [data-field="padrinos_html"]').forEach(el => {
     el.innerHTML = padHtml || d.padrinos || '';
@@ -309,11 +326,11 @@ window.addEventListener('message', (e) => {
 
   set('[data-field="novia"]', novia);
   set('[data-field="novio"]', novio);
-  set('[data-field="frase"]', d.message);
-  set('[data-field="mensaje_secundario"]', d.message_secondary);
+  set('[data-field="frase"]', t(d.message, d.message_en));
+  set('[data-field="mensaje_secundario"]', t(d.message_secondary, d.message_secondary_en));
   set('[data-field="fecha_hero"]', d.event_date);
-  set('[data-field="lugar_ceremonia"]', d.venue);
-  set('[data-field="direccion_ceremonia"]', d.venue_address);
+  set('[data-field="lugar_ceremonia"]', t(d.venue, d.venue_en));
+  set('[data-field="direccion_ceremonia"]', t(d.venue_address, d.venue_address_en));
   set('[data-field="hora_ceremonia"]', d.event_time);
   set('[data-field="lugar_recepcion"]', d.segunda_sede_json?.lugar || d.venue);
   set('[data-field="direccion_recepcion"]', d.segunda_sede_json?.direccion || d.venue_address);
@@ -332,22 +349,21 @@ window.addEventListener('message', (e) => {
   set('[data-field="nombre_festejado"]', novia);
   set('[data-field="nombre_madre"]', d.title);
   set('[data-field="fecha_bebe"]', d.segunda_sede_json?.fecha_bebe);
-  set('[data-field="vestimenta"]', d.dress_code);
-  set('[data-field="vestimenta_damas"]', d.dress_code_women);
-  set('[data-field="vestimenta_caballeros"]', d.dress_code_men);
-  set('[data-field="vestimenta_nota"]', d.dress_code_detail);
+  set('[data-field="vestimenta"]', t(d.dress_code, d.dress_code_en));
+  set('[data-field="vestimenta_damas"]', t(d.dress_code_women, d.dress_code_women_en));
+  set('[data-field="vestimenta_caballeros"]', t(d.dress_code_men, d.dress_code_men_en));
+  set('[data-field="vestimenta_nota"]', t(d.dress_code_detail, d.dress_code_detail_en));
   const iconsEl = document.querySelector('[data-field="vestimenta_iconos"]');
   if (iconsEl) iconsEl.style.display = d.dress_code_icons_enabled ? 'block' : 'none';
   set('[data-field="carrera"]', d.dress_code_detail);
   set('[data-field="institucion"]', d.venue);
   set('[data-field="generacion"]', d.segunda_sede_json?.generacion);
-  set('[data-field="regalo_mensaje"]', d.gift_message);
+  set('[data-field="regalo_mensaje"]', t(d.gift_message, d.gift_message_en) || '');
   set('[data-field="confirmacion_fecha"]', d.rsvp_config?.deadline || d.rsvp_config?.confFechaLimite || d.rsvp_deadline);
 
   const phone = d.rsvp_config?.phone || d.rsvp_config?.confTelefono || '521234567890';
   const waUrl = \`https://wa.me/\${phone}?text=\${encodeURIComponent('¡Hola! Confirmo mi asistencia a la invitación: ' + d.title + '. Link: https://giovis.app/' + d.slug)}\`;
 
-  const isEn = document.getElementById('lang-toggle-btn') && document.getElementById('lang-en')?.style?.fontWeight === 'bold';
 
   const rsvpEnabled = d.rsvp_config?.enabled ?? d.rsvp_config?.confHabilitada ?? true;
   document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el => {
@@ -467,18 +483,22 @@ window.addEventListener('message', (e) => {
   });
 
   // Itinerario
+  const itinItems = t(null, null) === '' 
+    ? (lang === 'en' && d.itinerary_items_en?.length > 0 ? d.itinerary_items_en : d.itinerary_items)
+    : d.itinerary_items;
+
   document.querySelectorAll('[data-field="itin_html"]').forEach(el => {
-    if (!d.itinerary_items || d.itinerary_items.length === 0) {
+    if (!itinItems || itinItems.length === 0) {
       el.innerHTML = '<div class="itin-empty">El itinerario aparecerá aquí</div>';
       return;
     }
-    el.innerHTML = d.itinerary_items.map(item => \`
+    el.innerHTML = itinItems.map(item => \`
       <div class="itin-item">
         <div class="itin-time">\${item.hora || ''}</div>
         <div class="itin-icon">\${item.icono || '⭐'}</div>
         <div class="itin-body">
-          <div class="itin-name">\${item.titulo || ''}</div>
-          <div class="itin-desc">\${item.descripcion || ''}</div>
+          <div class="itin-name">\${isEn && item.titulo?.includes('|') ? item.titulo.split('|')[1]?.trim() : (item.titulo?.split('|')[0] || '')}</div>
+          <div class="itin-desc">\${isEn && item.descripcion?.includes('|') ? item.descripcion.split('|')[1]?.trim() : (item.descripcion?.split('|')[0] || '')}</div>
         </div>
       </div>
     \`).join('');
@@ -491,11 +511,101 @@ window.addEventListener('message', (e) => {
     else coverEl.style.backgroundImage = \`url(\${d.cover_image_url})\`;
   }
 
-  // Música
   if (d.music_url) {
-    if (typeof window.initMusicFloatingIcon === 'function') {
-      window.initMusicFloatingIcon(d.music_url);
+    const audio = document.getElementById('audio-player');
+    const musicaSection = document.querySelector('[data-section="musica"]');
+    if (audio) { audio.src = d.music_url; }
+    if (musicaSection) musicaSection.style.display = 'block';
+
+    // ── ÍCONO MUSICAL FLOTANTE ──
+    if (!document.getElementById('music-floating-icon')) {
+      const icon = document.createElement('div');
+      icon.id = 'music-floating-icon';
+      icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
+      icon.style.cssText = \`
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: rgba(255,255,255,0.5);
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        animation: musicFloat 3s ease-in-out infinite;
+      \`;
+
+      icon.addEventListener('mouseenter', () => {
+        icon.style.color = 'rgba(255,255,255,0.9)';
+        icon.style.background = 'rgba(255,255,255,0.15)';
+      });
+      icon.addEventListener('mouseleave', () => {
+        icon.style.color = 'rgba(255,255,255,0.5)';
+        icon.style.background = 'rgba(255,255,255,0.08)';
+      });
+      icon.addEventListener('click', () => {
+        const a = document.getElementById('audio-player');
+        if (!a) return;
+        if (a.paused) {
+          a.play();
+          icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
+          icon.style.animationPlayState = 'running';
+          icon.style.opacity = '1';
+        } else {
+          a.pause();
+          icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle><line x1="1" y1="1" x2="23" y2="23" stroke="currentColor"></line></svg>';
+          icon.style.animationPlayState = 'paused';
+          icon.style.opacity = '0.3';
+        }
+      });
+
+      document.body.appendChild(icon);
+
+      // CSS animación flotante
+      if (!document.getElementById('music-icon-style')) {
+        const style = document.createElement('style');
+        style.id = 'music-icon-style';
+        style.innerHTML = \`
+          @keyframes musicFloat {
+            0%, 100% { transform: translateY(0px) rotate(-5deg); opacity: 0.5; }
+            50% { transform: translateY(-6px) rotate(5deg); opacity: 0.7; }
+          }
+          #music-floating-icon {
+            animation: musicFloat 3s ease-in-out infinite;
+          }
+        \`;
+        document.head.appendChild(style);
+      }
+
+      // Scroll — el ícono se mueve con la página
+      window.addEventListener('scroll', () => {
+        icon.style.top = (24 + window.scrollY) + 'px';
+      });
+
+      // Autoplay suave
+      setTimeout(() => {
+        const a = document.getElementById('audio-player');
+        if (a) {
+          a.volume = 0.35;
+          a.play().catch(() => {});
+        }
+      }, 1200);
     }
+  } else {
+    const icon = document.getElementById('music-floating-icon');
+    if (icon) icon.remove();
+    const audio = document.getElementById('audio-player');
+    if (audio) { audio.pause(); audio.src = ''; }
   }
 
   // Regalos
@@ -521,6 +631,8 @@ window.addEventListener('message', (e) => {
   if (d.sections_styles?.fields) {
     applyFieldStyles(d.sections_styles.fields);
   }
+
+
 });
 
 // Toggle música global

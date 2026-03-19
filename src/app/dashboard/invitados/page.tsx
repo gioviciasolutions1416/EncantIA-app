@@ -4,10 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 import { 
     Users, Plus, Upload, Search, Trash2, Edit, Link as LinkIcon, 
-    CheckCircle, Clock, XCircle, Share2, Loader2, Eye, Ticket
+    CheckCircle, Clock, XCircle, Share2, Loader2, Eye, Ticket, ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import QRCode from 'qrcode';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Event {
     id: string;
@@ -27,6 +30,7 @@ interface Guest {
 }
 
 export default function InvitadosPage() {
+    const router = useRouter();
     const [events, setEvents] = useState<Event[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [guests, setGuests] = useState<Guest[]>([]);
@@ -192,6 +196,28 @@ export default function InvitadosPage() {
         return `https://encant-ia-app.vercel.app/invite/${selectedEvent.slug}?inv=${guestId}`;
     };
 
+    const downloadQR = async (guestId: string, guestName: string) => {
+        const url = getGuestLink(guestId);
+        try {
+            const canvas = document.createElement('canvas');
+            await QRCode.toCanvas(canvas, url, {
+                width: 400,
+                margin: 2,
+                color: {
+                    dark: '#2d1b2d',
+                    light: '#fdfafc',
+                },
+            });
+            const link = document.createElement('a');
+            link.download = `QR-${guestName.replace(/\s+/g, '-')}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            toast.success(`QR de ${guestName} descargado`);
+        } catch (err) {
+            toast.error('Error al generar QR');
+        }
+    };
+
     const copyLink = (guestId: string) => {
         const url = getGuestLink(guestId);
         navigator.clipboard.writeText(url);
@@ -205,6 +231,12 @@ export default function InvitadosPage() {
             {/* ── HEADER ── */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
+                    <Link 
+                        href="/dashboard"
+                        className="flex items-center gap-2 text-[#a35d6a]/60 hover:text-[#a35d6a] transition-colors mb-2 text-[11px] font-black uppercase tracking-widest"
+                    >
+                        <ArrowLeft size={14} /> Dashboard
+                    </Link>
                     <h1 className="text-3xl font-black text-[#2d1b2d]" style={{ fontFamily: "'Playfair Display', serif" }}>Mis Invitados</h1>
                     <p className="text-xs text-[#a35d6a] font-bold uppercase tracking-widest mt-0.5">Gestión y Control de Accesos</p>
                 </div>
@@ -280,19 +312,20 @@ export default function InvitadosPage() {
                                 <th className="px-6 py-4">Pases</th>
                                 <th className="px-6 py-4">Estado</th>
                                 <th className="px-6 py-4">Link Personalizado</th>
+                                <th className="px-6 py-4">QR</th>
                                 <th className="px-6 py-4 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-rose-50/40">
                             {guestsLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-20">
+                                    <td colSpan={6} className="text-center py-20">
                                         <Loader2 className="animate-spin text-[#a35d6a] mx-auto" size={24} />
                                     </td>
                                 </tr>
                             ) : guests.filter(g => g.name.toLowerCase().includes(search.toLowerCase())).length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-20 text-slate-400 text-xs font-bold">
+                                    <td colSpan={6} className="text-center py-20 text-slate-400 text-xs font-bold">
                                         No se encontraron invitados
                                     </td>
                                 </tr>
@@ -322,6 +355,14 @@ export default function InvitadosPage() {
                                                 <p className="truncate text-slate-400 font-medium text-[10px]">{getGuestLink(guest.id)}</p>
                                                 <button onClick={() => copyLink(guest.id)} className="p-1.5 hover:bg-rose-50 rounded-lg text-[#a35d6a] transition-colors"><Share2 size={14} /></button>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => downloadQR(guest.id, guest.name)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d1b2d] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#a35d6a] transition-colors"
+                                            >
+                                                <Ticket size={11} /> QR
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-2 border-l border-rose-50 pl-2">

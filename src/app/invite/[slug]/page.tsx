@@ -14,6 +14,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { toast } from 'sonner';
 import { QRCodeCanvas } from 'qrcode.react';
 import { injectData } from '@/lib/template-injector';
+import { getGuests } from '@/lib/editor-supabase';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -430,6 +431,85 @@ function RSVPModal({ event, guest, onClose, onRefresh }: { event: EventData; gue
     );
 }
 
+function GuestBadge({ guest, slug, visible }: { guest: any, slug: string, visible: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const [qrUrl, setQrUrl] = useState('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (expanded && !qrUrl) {
+      const url = `${window.location.origin}/invite/${slug}/check?inv=${guest.id}`;
+      import('qrcode').then(QRCode => {
+        const canvas = document.createElement('canvas');
+        QRCode.toCanvas(canvas, url, {
+          width: 200,
+          margin: 2,
+          color: { dark: '#2d1b2d', light: '#fdfafc' }
+        }).then(() => {
+          setQrUrl(canvas.toDataURL());
+        });
+      });
+    }
+  }, [expanded, guest.id, slug, qrUrl]);
+
+  return (
+    <>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed inset-x-0 bottom-24 flex justify-center pointer-events-none z-[9999]"
+          >
+            <div className="bg-white/98 backdrop-blur-xl border border-rose-100/50 rounded-3xl shadow-2xl shadow-rose-200/40 overflow-hidden w-[300px] pointer-events-auto">
+              {/* Header degradado */}
+              <div className="bg-gradient-to-r from-[#a35d6a] to-[#7B2D8B] p-5 text-white">
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-70 mb-1">Tu Invitación</p>
+                <p className="text-lg font-black leading-tight">{guest.name}</p>
+                <div className="flex items-center gap-2 mt-3 bg-white/15 rounded-xl px-3 py-2 w-fit">
+                  <span className="text-2xl font-black">{guest.passes}</span>
+                  <span className="text-[10px] font-black opacity-80 uppercase tracking-widest">
+                    {guest.passes === 1 ? 'pase' : 'pases'}
+                  </span>
+                </div>
+              </div>
+
+              {/* QR Section */}
+              <div className="p-5 space-y-3">
+                <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.3em] text-center">Código de Acceso</p>
+                {qrUrl ? (
+                  <div className="bg-[#fdfafc] rounded-2xl p-3 border border-rose-50">
+                    <img src={qrUrl} alt="QR" className="w-full rounded-xl" />
+                  </div>
+                ) : (
+                  <div className="w-full aspect-square rounded-2xl bg-rose-50 animate-pulse" />
+                )}
+                <p className="text-[9px] text-gray-300 text-center font-bold leading-relaxed">
+                  Muestra este código en la entrada para verificar tu acceso
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className={`fixed bottom-6 right-4 z-[9999] transition-all duration-300 ${(visible || expanded) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#a35d6a]/40 to-[#7B2D8B]/40 backdrop-blur-xl border border-white/30 shadow-xl shadow-[#a35d6a]/10 flex items-center justify-center hover:scale-110 transition-all text-white"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 9V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3" />
+            <path d="M2 11v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7" />
+            <path d="M7 12h10" strokeDasharray="3 3"/>
+            <circle cx="12" cy="12" r="2" fill="white" />
+          </svg>
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ─── Public Invite Page ───────────────────────────────────────────────────────
 export default function InvitePage() {
     const { slug } = useParams() as { slug: string };
@@ -443,9 +523,27 @@ export default function InvitePage() {
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
     const [guest, setGuest] = useState<Guest | null>(null);
+    const [guestData, setGuestData] = useState<any>(null);
     const [pinInput, setPinInput] = useState('');
     const [pinError, setPinError] = useState(false);
     const [isPinCorrect, setIsPinCorrect] = useState(false);
+    const [showControls, setShowControls] = useState(true);
+    const scrollTimeoutRef = useRef<any>(null);
+
+    const handleScroll = () => {
+        setShowControls(true);
+        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = setTimeout(() => setShowControls(false), 2000);
+    };
+
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll);
+        scrollTimeoutRef.current = setTimeout(() => setShowControls(false), 2000);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        };
+    }, []);
 
     const { scrollYProgress } = useScroll();
     const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
@@ -453,6 +551,18 @@ export default function InvitePage() {
 
     const loadData = async () => {
         const { data } = await supabase.from('events').select('*').eq('slug', slug).single();
+
+        // Cargar datos del invitado si viene con ?inv=
+        const guestId = searchParams?.get('inv');
+        if (guestId) {
+          const { data: gData } = await supabase
+            .from('guests')
+            .select('*')
+            .eq('id', guestId)
+            .single();
+          setGuestData(gData);
+        }
+
         const isPreview = searchParams?.get('preview') === 'true';
 
         if (data && (data.is_published || isPreview)) {
@@ -625,7 +735,16 @@ export default function InvitePage() {
                     srcDoc={injectData(event.template_id, event as any)}
                     className="w-full h-full border-none"
                     title="Invitación"
+                    onLoad={(e) => {
+                        const iframeWindow = e.currentTarget.contentWindow;
+                        if (iframeWindow) {
+                            iframeWindow.addEventListener('scroll', handleScroll);
+                        }
+                    }}
                 />
+                {guestData && (
+                  <GuestBadge guest={guestData} slug={slug as string} visible={showControls} />
+                )}
             </div>
         );
     }
@@ -649,16 +768,31 @@ export default function InvitePage() {
                 )}
 
                 {/* Floating Navigation Controls */}
-                <div className="fixed top-6 right-6 z-[60] flex flex-col gap-3">
-                    {event.music_url && (
-                        <button onClick={toggleMusic} className="w-11 h-11 glass rounded-full flex items-center justify-center shadow-premium transition-all active:scale-90 border border-white/40 ring-4 ring-[#a35d6a05]">
-                            {isPlaying ? <Volume2 size={18} className="animate-pulse text-[#a35d6a]" /> : <VolumeX size={18} className="text-gray-400" />}
-                        </button>
+                <AnimatePresence>
+                    {showControls && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                            className="fixed top-6 right-6 z-[60] flex flex-col gap-3"
+                        >
+                            {event.music_url && (
+                                <button onClick={toggleMusic} className="w-11 h-11 bg-gradient-to-br from-[#a35d6a]/40 to-[#7B2D8B]/40 backdrop-blur-xl rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90 border border-white/30 text-white">
+                                    {isPlaying ? (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                                          <path d="M9 18V5l12-2v13"/>
+                                          <circle cx="6" cy="18" r="3"/>
+                                          <circle cx="18" cy="16" r="3"/>
+                                        </svg>
+                                    ) : <Volume2 size={18} className="text-white/70" />}
+                                </button>
+                            )}
+                            <button onClick={() => window.open(window.location.href, '_blank')} className="w-11 h-11 bg-gradient-to-br from-[#a35d6a]/40 to-[#7B2D8B]/40 backdrop-blur-xl rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90 border border-white/30 text-white">
+                                <Share2 size={18} />
+                            </button>
+                        </motion.div>
                     )}
-                    <button onClick={() => window.open(window.location.href, '_blank')} className="w-11 h-11 glass rounded-full flex items-center justify-center shadow-premium transition-all active:scale-90 border border-white/40 ring-4 ring-[#a35d6a05]">
-                        <Share2 size={18} className="text-[#a35d6a]" />
-                    </button>
-                </div>
+                </AnimatePresence>
 
                 {/* HERO AREA (TRANSFORMED) */}
                 <header className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center">
@@ -1241,6 +1375,10 @@ export default function InvitePage() {
                 <AnimatePresence>
                     {showRSVP && <RSVPModal event={event} guest={guest} onClose={() => setShowRSVP(false)} onRefresh={loadData} />}
                 </AnimatePresence>
+
+                {guestData && (
+                    <GuestBadge guest={guestData} slug={slug as string} visible={showControls} />
+                )}
 
             </div>
         </>
