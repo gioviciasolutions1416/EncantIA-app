@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-browser';
-import { Users, Plus, Upload, Search, Trash2, Edit, CheckCircle, Clock, XCircle, Share2, Loader2, Eye, Ticket, ArrowLeft, MoreHorizontal } from 'lucide-react';
+import { Users, Plus, Upload, Search, Trash2, Edit, CheckCircle, Clock, XCircle, Share2, Loader2, Eye, Ticket, ArrowLeft, MoreHorizontal, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
@@ -35,6 +35,9 @@ export default function InvitadosPage() {
   const [formData, setFormData] = useState({ name: '', passes: 1, phone: '', notes: '' });
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'confirmed' | 'pending' | 'declined'>('all');
+  const [doorToken, setDoorToken] = useState<string | null>(null);
+  const [generatingToken, setGeneratingToken] = useState(false);
+  const [showDoorModal, setShowDoorModal] = useState(false);
 
   const totalGuests = guests.length;
   const totalPasses = guests.reduce((acc, curr) => acc + (curr.passes || 0), 0);
@@ -48,6 +51,36 @@ export default function InvitadosPage() {
     const matchFilter = filter === 'all' || g.status === filter;
     return matchSearch && matchFilter;
   });
+
+  const generateDoorLink = async () => {
+    if (!selectedEvent) return;
+    setGeneratingToken(true);
+    try {
+      const res = await fetch('/api/door', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: selectedEvent.id,
+          label: 'Portero',
+          expiresHours: 48
+        })
+      });
+      const data = await res.json();
+      if (data.token) {
+        setDoorToken(data.token);
+        setShowDoorModal(true);
+      }
+    } catch {
+      toast.error('Error al generar link');
+    }
+    setGeneratingToken(false);
+  };
+
+  const copyDoorLink = () => {
+    if (!doorToken) return;
+    navigator.clipboard.writeText(`https://encant-ia-app.vercel.app/door/${doorToken}`);
+    toast.success('Link copiado');
+  };
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -228,14 +261,28 @@ export default function InvitadosPage() {
 
       {/* ── TOOLBAR ── */}
       <div className="px-4 mt-4 flex items-center gap-2">
-        <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-2 px-3 py-2.5">
-          <Search size={14} className="text-gray-300 shrink-0" />
-          <input type="text" placeholder="Buscar invitado..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 bg-transparent text-xs font-bold text-slate-700 outline-none placeholder:text-gray-300" />
+        <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-2 px-3 py-2">
+          <Search size={13} className="text-gray-300 shrink-0" />
+          <input
+            type="text"
+            placeholder="Buscar invitado..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 bg-transparent text-xs font-bold text-slate-700 outline-none placeholder:text-gray-300"
+          />
         </div>
-        <label className="w-10 h-10 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center text-gray-400 cursor-pointer hover:text-[#a35d6a] transition-colors shrink-0">
-          <Upload size={16} />
+        <label className="flex items-center gap-1.5 px-3 py-2 bg-white rounded-2xl border border-gray-100 shadow-sm text-gray-400 cursor-pointer hover:text-[#a35d6a] transition-colors text-[10px] font-black uppercase tracking-widest shrink-0">
+          <Upload size={13} /> CSV
           <input type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} />
         </label>
+        <button
+          onClick={generateDoorLink}
+          disabled={!selectedEvent || generatingToken}
+          className="flex items-center gap-1.5 px-3 py-2 bg-[#2d1b2d] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#a35d6a] transition-all disabled:opacity-50 shrink-0"
+        >
+          {generatingToken ? <Loader2 size={13} className="animate-spin" /> : <QrCode size={13} />}
+          Portero
+        </button>
       </div>
 
       {/* ── LISTA ── */}
@@ -371,6 +418,64 @@ export default function InvitadosPage() {
                   {editingGuest ? 'Guardar Cambios' : '+ Registrar Invitado'}
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDoorModal && doorToken && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDoorModal(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative z-10 space-y-4 border border-rose-100"
+            >
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-2xl bg-[#2d1b2d] flex items-center justify-center mx-auto mb-3">
+                  <QrCode size={24} className="text-white" />
+                </div>
+                <h3 className="text-lg font-black text-[#2d1b2d]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  Link de Portero
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                  Válido por 48 horas
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                <p className="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-widest">Link de acceso</p>
+                <p className="text-xs font-bold text-[#2d1b2d] break-all">
+                  encant-ia-app.vercel.app/door/{doorToken.slice(0, 20)}...
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  onClick={copyDoorLink}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#a35d6a] to-[#7B2D8B] text-white font-black text-xs uppercase tracking-widest"
+                >
+                  📋 Copiar Link
+                </button>
+                <button
+                  onClick={() => {
+                    const url = `https://encant-ia-app.vercel.app/door/${doorToken}`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(`🎟 Link de control de acceso para ${selectedEvent?.title}:\n\n${url}\n\nVálido por 48 horas.`)}`, '_blank');
+                  }}
+                  className="w-full py-3 rounded-2xl bg-[#25D366] text-white font-black text-xs uppercase tracking-widest"
+                >
+                  📱 Enviar por WhatsApp
+                </button>
+                <button onClick={() => setShowDoorModal(false)} className="w-full py-2.5 rounded-2xl text-gray-400 text-xs font-bold hover:bg-gray-50 transition-colors">
+                  Cerrar
+                </button>
+              </div>
+
+              <p className="text-[9px] text-gray-300 text-center font-medium">
+                El portero solo puede ver la lista y confirmar entradas. No tiene acceso al editor ni al dashboard.
+              </p>
             </motion.div>
           </div>
         )}

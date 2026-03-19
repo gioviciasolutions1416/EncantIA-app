@@ -285,7 +285,7 @@ function EventCard({ event, profile }: { event: Event, profile: any }) {
                             </Link>
                         </div>
                         <Link
-                            href={`/${event.slug}`}
+                            href={`/invite/${event.slug}`}
                             target="_blank"
                             className="text-center text-[9px] text-[#a35d6a]/70 hover:text-[#a35d6a] underline font-bold mt-1 tracking-wider"
                         >
