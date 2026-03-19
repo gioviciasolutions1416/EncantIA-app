@@ -532,7 +532,7 @@ export const BODA_CLASICA = `
         <a 
             id="whatsapp-btn"
             data-field="whatsapp_url" 
-            href="https://wa.me/521XXXXXXXXXX?text=Hola%2C%20confirmo%20mi%20asistencia%20a%20la%20boda%20de%20Giovanna%20%26%20Victor%20el%2024%20de%20octubre%20de%202026." 
+            href="https://wa.me/{{phone}}?text=Hola%2C%20confirmo%20mi%20asistencia%20a%20la%20boda%20de%20Giovanna%20%26%20Victor%20el%2024%20de%20octubre%20de%202026." 
             target="_blank"
             rel="noopener noreferrer"
             class="btn-magic"

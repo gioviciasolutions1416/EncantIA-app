@@ -444,6 +444,8 @@ export default function DashboardPage() {
         (user.user_metadata?.full_name || user.user_metadata?.name || user.email || 'Usuario')
             .split(' ')[0];
 
+    const activeItem = 'events';
+
     return (
         <div className="min-h-screen flex bg-[#fdfafc] relative overflow-hidden">
             <style>{`
@@ -627,30 +629,29 @@ export default function DashboardPage() {
             </main>
 
             {/* Mobile Bottom Nav */}
-            <nav
-                className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50 flex items-center justify-around px-2 py-2"
-                style={{ borderColor: '#f0dde3' }}
-            >
-                <Link href="/dashboard" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7B2D8B' }}>
-                    <LayoutDashboard size={20} />
-                    <span className="text-[10px] font-semibold">Eventos</span>
-                </Link>
-                <Link href="/dashboard/plantillas" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7a5060' }}>
-                    <Palette size={20} />
-                    <span className="text-[10px] font-semibold">Plantillas</span>
-                </Link>
-                <Link href="/dashboard/nuevo" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7a5060' }}>
-                    <PlusCircle size={20} />
-                    <span className="text-[10px] font-semibold">Crear</span>
-                </Link>
-                <Link href="/dashboard/cuenta" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl" style={{ color: '#7a5060' }}>
-                    <User size={20} />
-                    <span className="text-[10px] font-semibold">Cuenta</span>
-                </Link>
-                <button onClick={handleSignOut} className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-red-400">
-                    <LogOut size={20} />
-                    <span className="text-[10px] font-semibold">Salir</span>
-                </button>
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t z-50 flex items-center justify-around px-2 py-2" style={{ borderColor: '#f0dde3' }}>
+              <Link href="/dashboard" className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors ${activeItem === 'events' ? 'text-[#a35d6a]' : 'text-gray-400'}`}>
+                <LayoutDashboard size={20} strokeWidth={activeItem === 'events' ? 2.5 : 1.5} />
+                <span className="text-[10px] font-semibold">Eventos</span>
+              </Link>
+              <Link href="/dashboard/plantillas" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-gray-400">
+                <Palette size={20} strokeWidth={1.5} />
+                <span className="text-[10px] font-semibold">Plantillas</span>
+              </Link>
+              {/* Botón central flotante */}
+              <Link href="/dashboard/plantillas" className="flex flex-col items-center -mt-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#a35d6a] to-[#7B2D8B] flex items-center justify-center shadow-lg shadow-rose-300/40 hover:scale-105 transition-all">
+                  <PlusCircle size={26} strokeWidth={1.5} color="white" />
+                </div>
+              </Link>
+              <Link href="/dashboard/invitados" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-gray-400">
+                <Users size={20} strokeWidth={1.5} />
+                <span className="text-[10px] font-semibold">Invitados</span>
+              </Link>
+              <Link href="/dashboard/cuenta" className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-gray-400">
+                <User size={20} strokeWidth={1.5} />
+                <span className="text-[10px] font-semibold">Cuenta</span>
+              </Link>
             </nav>
         </div>
     );

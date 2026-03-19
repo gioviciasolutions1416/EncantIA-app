@@ -64,10 +64,26 @@ export const injectData = (templateId: string, eventData: EventData): string => 
   const galeriaHtml = buildGaleriaHtml(eventData.gallery_urls || []);
 
   // Mapeo detallado de variables
-  const phone = eventData.rsvp_config?.phone || eventData.rsvp_config?.confTelefono || '521234567890';
-  const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(`¡Hola! Confirmo mi asistencia a la invitación: ${eventData.title}. Link: https://giovis.app/${eventData.slug}`)}`;
+  const phone = (() => {
+    const cfg = eventData.rsvp_config;
+    if (cfg?.phone && cfg.phone !== '521XXXXXXXXXX' && cfg.phone.length > 5) return cfg.phone;
+    if (cfg?.phone_number && cfg.phone_number.length > 5) return `${cfg.phone_country || '52'}${cfg.phone_number}`;
+    if (cfg?.confTelefono && cfg.confTelefono !== '521XXXXXXXXXX') return cfg.confTelefono;
+    return '521234567890'; // fallback genérico
+  })();
+
+  const whatsappUrl = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(
+        `🎉 ¡Confirmo mi asistencia!\n\n` +
+        `👰 Evento: ${eventData.title}\n` +
+        `📅 Fecha: ${formatDate(eventData.event_date || '')}\n` +
+        `📍 Lugar: ${eventData.venue || ''}\n\n` +
+        `¡Nos vemos pronto! 🥂`
+      )}`
+    : '#';
 
   const vars: Record<string, string> = {
+    phone: phone,
     novia: novia,
     novio: novio,
     fecha_hero: formatDate(eventData.event_date || ''),
@@ -265,6 +281,10 @@ window.initMusicFloatingIcon = function(url) {
 
 
 
+// Activar modo invitado si viene con ?inv=
+const urlParams = new URLSearchParams(window.location.search);
+window.__isGuestMode = !!urlParams.get('inv');
+
 window.addEventListener('message', (e) => {
   if (e.data?.type !== 'UPDATE_DATA') return;
   const d = e.data.data;
@@ -361,12 +381,32 @@ window.addEventListener('message', (e) => {
   set('[data-field="regalo_mensaje"]', t(d.gift_message, d.gift_message_en) || '');
   set('[data-field="confirmacion_fecha"]', d.rsvp_config?.deadline || d.rsvp_config?.confFechaLimite || d.rsvp_deadline);
 
-  const phone = d.rsvp_config?.phone || d.rsvp_config?.confTelefono || '521234567890';
-  const waUrl = \`https://wa.me/\${phone}?text=\${encodeURIComponent('¡Hola! Confirmo mi asistencia a la invitación: ' + d.title + '. Link: https://giovis.app/' + d.slug)}\`;
+  const phone = d.rsvp_config?.phone || 
+  (d.rsvp_config?.phone_number ? 
+  \`\${d.rsvp_config?.phone_country || '52'}\${d.rsvp_config?.phone_number}\` : 
+  d.rsvp_config?.confTelefono || '521234567890');
+  const waUrl = phone ? \`https://wa.me/\${phone}?text=\${encodeURIComponent(
+    '🎉 ¡Confirmo mi asistencia!\\n\\n' +
+    '👰 Evento: ' + (d.title || '') + '\\n' +
+    '📅 Fecha: ' + formatDate(d.event_date) + '\\n' +
+    '📍 Lugar: ' + (d.venue || '') + '\\n\\n' +
+    '¡Nos vemos pronto! 🥂'
+  )}\` : '#';
 
 
   const rsvpEnabled = d.rsvp_config?.enabled ?? d.rsvp_config?.confHabilitada ?? true;
   document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el => {
+    el.addEventListener('click', function(e) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasGuest = urlParams.get('inv');
+      if (hasGuest) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.parent.postMessage({ type: 'GUEST_CONFIRM' }, '*');
+        return false;
+      }
+    }, true);
+
     if (rsvpEnabled) {
       el.style.display = 'inline-block';
       el.innerText = isEn ? 'Confirm Attendance' : 'Confirmar Asistencia';

@@ -11,12 +11,27 @@ import {
   MessageSquare,
   Plus,
   Trash2,
-  BellRing
+  BellRing,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const COUNTRIES = [
+    { code: '52', flag: '🇲🇽', name: 'México' },
+    { code: '1', flag: '🇺🇸', name: 'USA' },
+    { code: '34', flag: '🇪🇸', name: 'España' },
+    { code: '57', flag: '🇨🇴', name: 'Colombia' },
+    { code: '54', flag: '🇦🇷', name: 'Argentina' },
+    { code: '56', flag: '🇨🇱', name: 'Chile' },
+    { code: '51', flag: '🇵🇪', name: 'Perú' },
+    { code: '58', flag: '🇻🇪', name: 'Venezuela' },
+    { code: '55', flag: '🇧🇷', name: 'Brasil' },
+    { code: '502', flag: '🇬🇹', name: 'Guatemala' }
+];
+
 export default function Confirmacion() {
   const { eventData, updateField } = useEditor();
+  const [countryMenuOpen, setCountryMenuOpen] = React.useState(false);
   
   // Inicializar rsvp_config si no existe
   const config = eventData.rsvp_config || {
@@ -26,6 +41,8 @@ export default function Confirmacion() {
     menu_options: ['Estandar', 'Vegetariano', 'Infantil'],
     custom_message: 'Por favor, confirma tu asistencia antes de la fecha límite.'
   };
+
+  console.log('RSVP CONFIG:', JSON.stringify(eventData.rsvp_config));
 
   const updateConfig = (field: string, value: any) => {
     updateField('rsvp_config', {
@@ -120,6 +137,86 @@ export default function Confirmacion() {
                   />
                   <span className="text-[10px] font-bold text-gray-300 uppercase tracking-tighter shrink-0">Máx sugerido</span>
                 </div>
+              </section>
+
+              <section className="space-y-3">
+                <label className="text-[11px] font-black text-[#a35d6a]/60 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <MessageSquare size={14} /> WhatsApp del Organizador
+                </label>
+                <div className="bg-white border border-rose-100 rounded-3xl shadow-sm p-4 space-y-3">
+                  <div className="flex gap-2">
+                    {/* Selector de País Custom */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setCountryMenuOpen(!countryMenuOpen)}
+                        className="bg-rose-50 border border-rose-100 rounded-2xl px-3 py-2.5 text-xs font-black text-[#a35d6a] flex items-center gap-1.5 hover:bg-rose-100/50 transition-colors"
+                      >
+                        <span className="text-sm">{COUNTRIES.find(c => c.code === (config.phone_country || '52'))?.flag}</span>
+                        <span className="text-[10px]">+{config.phone_country || '52'}</span>
+                        <ChevronDown size={12} className={`transition-transform ${countryMenuOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {countryMenuOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setCountryMenuOpen(false)} />
+                          <div className="absolute top-full left-0 mt-1 bg-white border border-rose-100 shadow-xl rounded-2xl w-44 z-50 p-1 divide-y divide-rose-50/40 overflow-hidden max-h-48 overflow-y-auto">
+                            {COUNTRIES.map((c) => (
+                              <button
+                                key={c.code}
+                                type="button"
+                                onClick={() => {
+                                  updateField('rsvp_config', {
+                                    ...config,
+                                    phone_country: c.code,
+                                    phone: `${c.code}${config.phone_number || ''}`
+                                  });
+                                  setCountryMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2 p-2 hover:bg-rose-50/60 rounded-xl text-left transition-colors"
+                              >
+                                <span className="text-base">{c.flag}</span>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-black text-[#2d1b2d]">{c.name}</span>
+                                  <span className="text-[8px] text-gray-400 font-bold">+{c.code}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Input de Número */}
+                    <input
+                      type="tel"
+                      value={config.phone_number || ''}
+                      onChange={(e) => {
+                        const num = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        const country = config.phone_country || '52';
+                        updateField('rsvp_config', {
+                          ...config,
+                          phone_number: num,
+                          phone: `${country}${num}`
+                        });
+                      }}
+                      placeholder="Ej: 5512345678"
+                      className="flex-1 bg-rose-50/30 border border-rose-100 rounded-2xl px-4 py-2.5 text-xs font-bold text-[#2d1b2d] outline-none placeholder:text-rose-200 focus:border-[#a35d6a] transition-colors"
+                    />
+                  </div>
+
+                  {config.phone_number && (
+                    <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-2xl px-3 py-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <p className="text-[10px] font-black text-emerald-600">
+                        +{config.phone_country || '52'} {config.phone_number}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[9px] text-gray-400 font-medium pl-1">
+                  Los invitados confirmarán su asistencia a este número.
+                </p>
               </section>
             </div>
 

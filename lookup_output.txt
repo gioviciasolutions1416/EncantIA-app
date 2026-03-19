@@ -1,0 +1,9 @@
+MATCH FOUND AT: 19124
+bilitada ?? true;
+  document.querySelectorAll('[data-field="whatsapp_url"]').forEach(el => {
+    // Interceptar botón RSVP si hay invitado
+    el.addEventListener('click', function(e) {
+      if (window.__isGuestMode) {
+        e.preventDefault();
+        window.parent.postMessage({ type: 'RSVP_CLICK' }, '*');
+      }

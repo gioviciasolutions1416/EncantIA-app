@@ -7,7 +7,7 @@ import {
     MapPin, Calendar, CheckCircle2, X, Loader2, Music, Volume2, VolumeX, 
     Navigation, ExternalLink, Gift, Clock, Camera, Shield, QrCode, Phone, 
     Plus, Heart, Church, Car, Cake, Utensils, IceCream, Flower2, Wine, Trash2,
-    Hash, FileText, Share2, Globe, Sparkles, Quote, Lock
+    Hash, FileText, Share2, Globe, Sparkles, Quote, Lock, CheckCircle, Ticket
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
@@ -434,6 +434,7 @@ function RSVPModal({ event, guest, onClose, onRefresh }: { event: EventData; gue
 function GuestBadge({ guest, slug, visible }: { guest: any, slug: string, visible: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -451,6 +452,57 @@ function GuestBadge({ guest, slug, visible }: { guest: any, slug: string, visibl
       });
     }
   }, [expanded, guest.id, slug, qrUrl]);
+
+  const handleConfirm = async () => {
+    if (!guest) return;
+
+    // 1. Confirmar en Supabase
+    const res = await fetch('/api/rsvp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestId: guest.id })
+    });
+
+    // 2. Generar QR
+    let currentQrUrl = qrUrl;
+    if (!currentQrUrl) {
+      const url = `${window.location.origin}/invite/${slug}/check?inv=${guest.id}`;
+      const QRCode = await import('qrcode');
+      const canvas = document.createElement('canvas');
+      await QRCode.toCanvas(canvas, url, {
+        width: 300,
+        margin: 2,
+        color: { dark: '#2d1b2d', light: '#fdfafc' }
+      });
+      currentQrUrl = canvas.toDataURL();
+      setQrUrl(currentQrUrl);
+    }
+
+    // 3. Mostrar confirmación
+    setConfirmed(true);
+    setExpanded(false);
+
+    // 4. Abrir WhatsApp después de 2 segundos
+    if (guest.phone) {
+      const phone = guest.phone.replace(/\D/g, '');
+      const message = encodeURIComponent(
+        `🎉 ¡Tu asistencia ha sido confirmada!\n\n` +
+        `Nombre: ${guest.name}\n` +
+        `Pases: ${guest.passes}\n\n` +
+        `🎟 Guarda una captura de tu código QR que aparece en la invitación para presentarlo en la entrada.\n\n` +
+        `Link de tu invitación:\n${window.location.href}`
+      );
+      setTimeout(() => {
+        window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+      }, 2000);
+    }
+  };
+
+  useEffect(() => {
+    const handleGuestConfirm = () => handleConfirm();
+    window.addEventListener('guest-confirm', handleGuestConfirm);
+    return () => window.removeEventListener('guest-confirm', handleGuestConfirm);
+  }, [handleConfirm]);
 
   return (
     <>
@@ -493,6 +545,68 @@ function GuestBadge({ guest, slug, visible }: { guest: any, slug: string, visibl
           </motion.div>
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {confirmed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-xs w-full text-center shadow-2xl"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, delay: 0.2 }}
+                className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4 border-2 border-emerald-200"
+              >
+                <CheckCircle size={40} className="text-emerald-500" />
+              </motion.div>
+              <h2 className="text-xl font-black text-[#2d1b2d] mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>
+                ¡Confirmado!
+              </h2>
+              <p className="text-sm text-gray-400 font-medium mb-2">{guest.name}</p>
+              <div className="flex items-center justify-center gap-2 bg-rose-50 rounded-xl px-4 py-2 mb-4 w-fit mx-auto">
+                <span className="text-sm font-black text-[#a35d6a]">{guest.passes} {guest.passes === 1 ? 'pase' : 'pases'}</span>
+              </div>
+              
+              {/* QR */}
+              {qrUrl && (
+                <>
+                  <div className="bg-[#fdfafc] rounded-2xl p-3 border border-rose-50 mb-4">
+                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-2">Tu código de acceso</p>
+                    <img src={qrUrl} alt="QR" className="w-40 h-40 mx-auto rounded-xl" />
+                    <p className="text-[9px] text-gray-300 mt-2 font-bold">Guarda una captura para la entrada</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.download = `QR-${guest.name.replace(/\s+/g, '-')}.png`;
+                      link.href = qrUrl;
+                      link.click();
+                    }}
+                    className="w-full py-2.5 rounded-2xl border-2 border-[#a35d6a] text-[#a35d6a] font-black text-xs uppercase tracking-widest mb-2 hover:bg-rose-50 transition-colors"
+                  >
+                    ⬇️ Descargar QR
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={() => setConfirmed(false)}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#a35d6a] to-[#7B2D8B] text-white font-black text-xs uppercase tracking-widest"
+              >
+                Ver invitación
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className={`fixed bottom-6 right-4 z-[9999] transition-all duration-300 ${(visible || expanded) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <button
           onClick={() => setExpanded(!expanded)}
@@ -530,11 +644,33 @@ export default function InvitePage() {
     const [showControls, setShowControls] = useState(true);
     const scrollTimeoutRef = useRef<any>(null);
 
+    // Confirmar asistencia del invitado
+    const handleRSVP = async () => {
+      if (!guestData) return;
+      await supabase
+        .from('guests')
+        .update({ 
+          status: 'confirmed',
+          rsvp_status: 'confirmed'
+        })
+        .eq('id', guestData.id);
+    };
+
     const handleScroll = () => {
         setShowControls(true);
         if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
         scrollTimeoutRef.current = setTimeout(() => setShowControls(false), 2000);
     };
+
+    useEffect(() => {
+      const handleMessage = (e: MessageEvent) => {
+        if (e.data?.type === 'GUEST_CONFIRM') {
+          window.dispatchEvent(new CustomEvent('guest-confirm'));
+        }
+      };
+      window.addEventListener('message', handleMessage);
+      return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
     useEffect(() => {
         window.addEventListener('scroll', handleScroll);
@@ -728,22 +864,48 @@ export default function InvitePage() {
         return `${h12}:${m} ${ampm}`;
     };
 
-    if (event.template_id) {
+    // Asegurar que rsvp_config sea objeto y no string
+    const evt = event as any;
+    if (evt.rsvp_config && typeof evt.rsvp_config === 'string') {
+      try {
+        evt.rsvp_config = JSON.parse(evt.rsvp_config);
+      } catch(e) {}
+    }
+
+    if (evt.template_id) {
         return (
             <div className="fixed inset-0 w-full h-full bg-white">
-                <iframe 
-                    srcDoc={injectData(event.template_id, event as any)}
+                <iframe
+                    srcDoc={injectData(evt.template_id, event as any)}
                     className="w-full h-full border-none"
                     title="Invitación"
                     onLoad={(e) => {
-                        const iframeWindow = e.currentTarget.contentWindow;
-                        if (iframeWindow) {
-                            iframeWindow.addEventListener('scroll', handleScroll);
+                        const iframeDoc = e.currentTarget.contentDocument;
+                        const iframeWin = e.currentTarget.contentWindow;
+                        
+                        if (iframeWin) {
+                            iframeWin.addEventListener('scroll', handleScroll);
+                        }
+
+                        // Interceptar botón WhatsApp si hay invitado
+                        if (guestData && iframeDoc) {
+                            setTimeout(() => {
+                                iframeDoc.querySelectorAll('[data-field="whatsapp_url"]').forEach((el: any) => {
+                                    const newEl = el.cloneNode(true);
+                                    el.parentNode?.replaceChild(newEl, el);
+                                    newEl.addEventListener('click', (ev: Event) => {
+                                        ev.preventDefault();
+                                        ev.stopPropagation();
+                                        const event = new CustomEvent('guest-confirm');
+                                        window.dispatchEvent(event);
+                                    });
+                                });
+                            }, 500);
                         }
                     }}
                 />
                 {guestData && (
-                  <GuestBadge guest={guestData} slug={slug as string} visible={showControls} />
+                    <GuestBadge guest={guestData} slug={slug as string} visible={showControls} />
                 )}
             </div>
         );
